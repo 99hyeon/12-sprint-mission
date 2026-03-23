@@ -31,7 +31,7 @@ public class JCFMessageService implements MessageService {
     }
 
     @Override
-    public List<Message> readAll(UUID id) {
+    public List<Message> readAll() {
         return new ArrayList<>(data.values());
     }
 

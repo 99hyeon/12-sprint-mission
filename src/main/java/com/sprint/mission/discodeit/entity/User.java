@@ -46,17 +46,20 @@ public class User {
 
     public void updateEmail(String email) {
         this.email = email;
+        updateUpdatedAt();
     }
 
     public void updateNickName(String nickName) {
         this.nickName = nickName;
+        updateUpdatedAt();
     }
 
     public void updateUserName(String userName) {
         this.userName = userName;
+        updateUpdatedAt();
     }
 
-    public void updateUpdatedAt() {
+    private void updateUpdatedAt() {
         this.updatedAt = System.currentTimeMillis();
     }
 }

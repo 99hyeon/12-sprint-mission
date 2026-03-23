@@ -39,6 +39,8 @@ public class JCFChannelService implements ChannelService {
     public Channel update(Channel channel) {
         if(data.containsKey(channel.getId())){
             data.put(channel.getId(), channel);
+
+            return channel;
         }
 
         return null;

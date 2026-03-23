@@ -45,17 +45,20 @@ public class Message {
 
     public void updateChannel(Channel channel){
         this.channel = channel;
+        updateUpdatedAt();
     }
 
     public void updateUser(User user){
         this.user = user;
+        updateUpdatedAt();
     }
 
     public void updateContent(String content){
         this.content = content;
+        updateUpdatedAt();
     }
 
-    public void updateUpdatedAt() {
+    private void updateUpdatedAt() {
         this.updatedAt = System.currentTimeMillis();
     }
 }

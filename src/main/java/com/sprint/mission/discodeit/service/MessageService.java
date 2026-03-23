@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface MessageService {
     Message create(Message message);
     Optional<Message> read(UUID id);
-    List<Message> readAll(UUID id);
+    List<Message> readAll();
     Message update(Message message);
     void delete(UUID id);
 }

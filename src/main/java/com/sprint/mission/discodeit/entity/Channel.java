@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class Channel {
+
     private UUID id;
     private String name;
     private boolean isPublic;
@@ -35,7 +36,7 @@ public class Channel {
         return name;
     }
 
-    public boolean getIsPublic(){
+    public boolean getIsPublic() {
         return isPublic;
     }
 
@@ -47,11 +48,11 @@ public class Channel {
         return notiContents;
     }
 
-    public List<Message> getMessages(){
+    public List<Message> getMessages() {
         return messages;
     }
 
-    public List<User> getUsers(){
+    public List<User> getUsers() {
         return users;
     }
 
@@ -65,29 +66,35 @@ public class Channel {
 
     public void updateName(String name) {
         this.name = name;
+        updateUpdatedAt();
     }
 
-    public void updateIsPublic(boolean isPublic){
+    public void updateIsPublic(boolean isPublic) {
         this.isPublic = isPublic;
+        updateUpdatedAt();
     }
 
     public void updateNotiTitle(String notiTitle) {
         this.notiTitle = notiTitle;
+        updateUpdatedAt();
     }
 
     public void updateNotiContents(String notiContents) {
         this.notiContents = notiContents;
+        updateUpdatedAt();
     }
 
-    public void updateMessages(List<Message> messages){
-        this.messages = messages;
+    public void updateMessages(Message message) {
+        this.messages.add(message);
+        updateUpdatedAt();
     }
 
-    public void updateUsers(List<User> users){
+    public void updateUsers(List<User> users) {
         this.users = users;
+        updateUpdatedAt();
     }
 
-    public void updateUpdatedAt() {
+    private void updateUpdatedAt() {
         this.updatedAt = System.currentTimeMillis();
     }
 }
