@@ -6,6 +6,9 @@ import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.service.file.FileChannelService;
+import com.sprint.mission.discodeit.service.file.FileMessageService;
+import com.sprint.mission.discodeit.service.file.FileUserService;
 import com.sprint.mission.discodeit.service.jcf.JCFChannelService;
 import com.sprint.mission.discodeit.service.jcf.JCFMessageService;
 import com.sprint.mission.discodeit.service.jcf.JCFUserService;
@@ -22,67 +25,60 @@ public class JavaApplication {
         Message message1 = new Message(channel1, user1, "채널1 여러분 반갑습니다.");
         Message message2 = new Message(channel1, user1, "채널1 여러분 반갑습니다2.");
 
-        //JCFUserService 테스트
-        UserService userService = new JCFUserService();
-        User userNull = userService.read(user1.getId()).orElse(null);
-        System.out.println("유저1 등록 전(null) : " + userNull);
+        System.out.println("/----------------UserService 테스트----------------/");
+        UserService userFileService = new FileUserService("data/users.ser");
 
-        User savedUser = userService.create(user1);
-        System.out.println("유저1 등록 후(유저1) : " + savedUser.getUserName());
+        User savedUser = userFileService.create(user1);
+        System.out.println("유저 생성 : " + savedUser.getId());
+        System.out.println("유저 단건 조회 : " + userFileService.read(savedUser.getId()).orElse(null).getUserName());
+        System.out.println("유저 전체 조회 수 : " + userFileService.readAll().size());
 
-        List<User> users = userService.readAll();
-        System.out.println("유저 리스트 사이즈(1) : " + users.size());
+        savedUser.updateUserName("이름수정");
+        userFileService.update(savedUser);
+        System.out.println("유저 이름 수정 : " + userFileService.read(savedUser.getId()).orElse(null).getUserName());
 
-        user1.updateUserName("1유저");
-        savedUser = userService.update(user1);
-        System.out.println("유저 변경 이름(1유저) : " + savedUser.getUserName());
+        userFileService.delete(savedUser.getId());
+        System.out.println("유저 삭제 : " + userFileService.read(savedUser.getId()).orElse(null));
 
-        userService.delete(user1.getId());
-        System.out.println("유저 삭제됨(null) : " + userService.read(user1.getId()).orElse(null) + "\n");
 
-        //JCFChannelService 테스트
-        ChannelService channelService = new JCFChannelService();
-        List<Channel> channels = channelService.readAll();
-        System.out.println("채널들 등록 전(true) : " + channels.isEmpty());
+        System.out.println("\n/----------------ChannelService 테스트----------------/");
+        ChannelService channelFileService = new FileChannelService("data/channels.ser");
 
-        Channel savedChannel1 = channelService.create(channel1);
-        System.out.println("채널1 등록 후(채널1) : " + savedChannel1.getName());
-        Channel savedChannel2 = channelService.create(channel2);
-        System.out.println("채널2 등록 후(채널2) : " + savedChannel2.getName());
+        Channel savedChannel1 = channelFileService.create(channel1);
+        Channel savedChannel2 = channelFileService.create(channel2);
+        System.out.println("채널1 생성 : " + savedChannel1.getId());
+        System.out.println("채널2 생성 : " + savedChannel2.getId());
+        System.out.println("채널 단건 조회 : " + channelFileService.read(savedChannel1.getId()).orElse(null).getName());
+        System.out.println("채널 전체 조회 수 : " + channelFileService.readAll().size());
 
-        channels = channelService.readAll();
-        System.out.println("채널들 등록 후(2) : " + channels.size());
+        savedChannel1.updateName("채널1수정");
+        channelFileService.update(savedChannel1);
+        System.out.println("채널1 이름 수정 : " + channelFileService.read(savedChannel1.getId()).orElse(null).getName());
 
-        channel1.updateName("1채널");
-        channelService.update(channel1);
-        savedChannel1 = channelService.read(channel1.getId()).orElse(null);
-        System.out.println("채널1 -> 1채널로 이름 수정 : " + savedChannel1.getName());
+        channelFileService.delete(savedChannel1.getId());
+        System.out.println("채널1 삭제 : " + channelFileService.read(savedChannel1.getId()).orElse(null));
+        System.out.println("채널 전체 조회 수 : " + channelFileService.readAll().size());
 
-        channelService.delete(channel1.getId());
-        savedChannel1 = channelService.read(channel1.getId()).orElse(null);
-        System.out.println("채널1 삭제 후(null) : " + savedChannel1 + "\n");
 
         //JCFMessageService 테스트
-        MessageService messageService = new JCFMessageService();
-        List<Message> messages = messageService.readAll();
-        System.out.println("메세지들 등록 전(true) : " + messages.isEmpty());
 
-        Message savedMessage1 = messageService.create(message1);
-        System.out.println("메세지1 등록 후 : " + savedMessage1.getContent());
-        Message savedMessage2 = messageService.create(message2);
-        System.out.println("메세지2 등록 후 : " + savedMessage2.getContent());
+        System.out.println("\n/----------------MessageService 테스트----------------/");
+        MessageService messageFileService = new FileMessageService("data/messages.ser");
 
-        messages = messageService.readAll();
-        System.out.println("메세지들 등록 후(2) : " + messages.size());
+        Message savedMessage1 = messageFileService.create(message1);
+        Message savedMessage2 = messageFileService.create(message2);
+        System.out.println("메세지1 생성 : " + savedMessage1.getId());
+        System.out.println("메세지2 생성 : " + savedMessage2.getId());
+        System.out.println("메세지 단건 조회 : " + messageFileService.read(savedMessage1.getId()).orElse(null).getContent());
+        System.out.println("메세지 전체 조회 수 : " + messageFileService.readAll().size());
 
-        message1.updateContent("메세지1 수정함");
-        channelService.update(channel1);
-        savedMessage1 = messageService.read(message1.getId()).orElse(null);
-        System.out.println("메세지 내용 수정 : " + savedMessage1.getContent());
+        savedMessage1.updateContent("메세지1 내용수정");
+        messageFileService.update(savedMessage1);
+        System.out.println("메세지1 이름 수정 : " + messageFileService.read(savedMessage1.getId()).orElse(null).getContent());
 
-        messageService.delete(message1.getId());
-        savedMessage1 = messageService.read(message1.getId()).orElse(null);
-        System.out.println("메세지1 삭제 후(null) : " + savedMessage1 + "\n");
+        messageFileService.delete(savedMessage1.getId());
+        System.out.println("메세지1 삭제 : " + messageFileService.read(savedMessage1.getId()).orElse(null));
+        System.out.println("메세지 전체 조회 수 : " + messageFileService.readAll().size());
 
     }
 
