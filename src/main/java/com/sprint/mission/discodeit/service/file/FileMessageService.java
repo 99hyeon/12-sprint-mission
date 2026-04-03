@@ -1,14 +1,11 @@
 package com.sprint.mission.discodeit.service.file;
 
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.service.ChannelService;
 import com.sprint.mission.discodeit.service.MessageService;
-import java.io.EOFException;
+import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.util.FileStore;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,76 +14,71 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class FileMessageService implements MessageService {
+    private final UserService userService;
+    private final ChannelService channelService;
 
     private final File file;
+    private final FileStore<Map<UUID, Message>> fileStore;
 
-    public FileMessageService(String filePath) {
+    public FileMessageService(String filePath, UserService userService, ChannelService channelService) {
+        this.userService = userService;
+        this.channelService = channelService;
         this.file = new File(filePath);
+        this.fileStore = new FileStore<>(filePath, "Message");
     }
 
 
     @Override
     public Message create(Message message) {
-        Map<UUID, Message> data = load();
+        checkValidation(message);
+
+        Map<UUID, Message> data = loadOrEmpty();
         data.put(message.getId(), message);
-        save(data);
+        fileStore.save(data);
         return message;
     }
 
     @Override
     public Optional<Message> read(UUID id) {
-        Map<UUID, Message> data = load();
-        return Optional.ofNullable(data.get(id));
+        return Optional.ofNullable(loadOrEmpty().get(id));
     }
 
     @Override
     public List<Message> readAll() {
-        return new ArrayList<>(load().values());
+        return new ArrayList<>(loadOrEmpty().values());
     }
 
     @Override
     public Message update(Message message) {
-        Map<UUID, Message> data = load();
+        checkValidation(message);
+
+        Map<UUID, Message> data = loadOrEmpty();
         if (!data.containsKey(message.getId())) {
-            return null;
+            throw new IllegalArgumentException("존재하지 않는 메세지");
         }
         data.put(message.getId(), message);
-        save(data);
+        fileStore.save(data);
         return message;
     }
 
     @Override
     public void delete(UUID id) {
-        Map<UUID, Message> data = load();
+        Map<UUID, Message> data = loadOrEmpty();
         data.remove(id);
-        save(data);
+        fileStore.save(data);
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<UUID, Message> load() {
-        if (!file.exists() || file.length() == 0) {
-            return new HashMap<>();
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            return (Map<UUID, Message>) ois.readObject();
-        } catch (EOFException e) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("failed file read", e);
-        }
+    private Map<UUID, Message> loadOrEmpty() {
+        Map<UUID, Message> data = fileStore.load();
+        return data == null ? new HashMap<>() : data;
     }
 
-    private void save(Map<UUID, Message> data) {
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-            oos.writeObject(data);
-        } catch (IOException e) {
-            throw new RuntimeException("Channel 파일 저장 실패", e);
-        }
+    private void checkValidation(Message message) {
+        userService.read(message.getUser().getId()).orElseThrow(
+            () -> new IllegalArgumentException("존재하지 않는 사용자")
+        );
+        channelService.read(message.getChannel().getId()).orElseThrow(
+            () -> new IllegalArgumentException("존재하지 않는 채널")
+        );
     }
 }

@@ -86,7 +86,7 @@ public class Channel implements Serializable {
         updateUpdatedAt();
     }
 
-    public void updateMessages(Message message) {
+    public void addMessages(Message message) {
         this.messages.add(message);
         updateUpdatedAt();
     }

@@ -1,14 +1,8 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.repository.jcf.MessageRepository;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.util.FileStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,65 +11,40 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class FileMessageRepository implements MessageRepository {
-    private final File file;
+    private final FileStore<Map<UUID, Message>> fileStore;
 
     public FileMessageRepository(String filePath) {
-        this.file = new File(filePath);
+        this.fileStore = new FileStore<>(filePath, "Message");
     }
 
 
     @Override
     public Message save(Message message) {
-        Map<UUID, Message> data = load();
+        Map<UUID, Message> data = loadOrEmpty();
         data.put(message.getId(), message);
-        save(data);
+        fileStore.save(data);
         return message;
     }
 
     @Override
     public Optional<Message> findById(UUID id) {
-        Map<UUID, Message> data = load();
-        return Optional.ofNullable(data.get(id));
+        return Optional.ofNullable(loadOrEmpty().get(id));
     }
 
     @Override
     public List<Message> findAll() {
-        return new ArrayList<>(load().values());
+        return new ArrayList<>(loadOrEmpty().values());
     }
 
     @Override
     public void delete(UUID id) {
-        Map<UUID, Message> data = load();
+        Map<UUID, Message> data = loadOrEmpty();
         data.remove(id);
-        save(data);
+        fileStore.save(data);
     }
 
-
-    @SuppressWarnings("unchecked")
-    private Map<UUID, Message> load() {
-        if (!file.exists() || file.length() == 0) {
-            return new HashMap<>();
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            return (Map<UUID, Message>) ois.readObject();
-        } catch (EOFException e) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("failed file read", e);
-        }
-    }
-
-    private void save(Map<UUID, Message> data) {
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-            oos.writeObject(data);
-        } catch (IOException e) {
-            throw new RuntimeException("Channel 파일 저장 실패", e);
-        }
+    private Map<UUID, Message> loadOrEmpty() {
+        Map<UUID, Message> data = fileStore.load();
+        return data == null ? new HashMap<>() : data;
     }
 }
