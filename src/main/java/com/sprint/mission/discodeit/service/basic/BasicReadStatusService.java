@@ -45,9 +45,8 @@ public class BasicReadStatusService implements ReadStatusService {
         return dtoFrom(readStatus);
     }
 
-    //todo: 이거 list로 담아서 보내나? 그냥 리스트를 담은 dto를 보내는거 아닌가?
     @Override
-    public List<ReadStatusResponse> findByUserId(UUID userId) {
+    public List<ReadStatusResponse> findAllByUserId(UUID userId) {
         validateUserExists(userId);
         List<ReadStatus> readStatuses = readStatusRepository.findByUserId(userId);
 
