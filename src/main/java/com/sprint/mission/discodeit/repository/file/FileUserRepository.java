@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -19,13 +20,15 @@ import org.springframework.stereotype.Repository;
 )
 public class FileUserRepository implements UserRepository {
     private static final String TARGET_NAME = "User";
-    private static final String FILE_PATH = "data/users.ser";
+    private static final String FILE_PATH = "/users.ser";
 
 
     private final FileStore<Map<java.util.UUID, User>> fileStore;
 
-    public FileUserRepository() {
-        this.fileStore = new FileStore<>(FILE_PATH, TARGET_NAME);
+    public FileUserRepository(
+        @Value("${discodeit.repository.file-directory:data}") String fileDirectory
+    ) {
+        this.fileStore = new FileStore<>(fileDirectory + FILE_PATH, TARGET_NAME);
     }
 
     @Override

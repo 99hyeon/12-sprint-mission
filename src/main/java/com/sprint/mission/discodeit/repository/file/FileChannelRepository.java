@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -20,13 +21,15 @@ import org.springframework.stereotype.Repository;
 )
 public class FileChannelRepository implements ChannelRepository {
     private static final String TARGET_NAME = "Channel";
-    private static final String FILE_PATH = "data/channels.ser";
+    private static final String FILE_PATH = "/channels.ser";
 
 
     private final FileStore<Map<UUID, Channel>> fileStore;
 
-    public FileChannelRepository() {
-        this.fileStore = new FileStore<>(FILE_PATH, TARGET_NAME);
+    public FileChannelRepository(
+        @Value("${discodeit.repository.file-directory:data}") String fileDirectory
+    ) {
+        this.fileStore = new FileStore<>(fileDirectory + FILE_PATH, TARGET_NAME);
     }
 
     @Override

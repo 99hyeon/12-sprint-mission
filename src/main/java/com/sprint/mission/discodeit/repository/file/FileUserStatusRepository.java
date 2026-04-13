@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -21,12 +22,14 @@ import org.springframework.stereotype.Repository;
 public class FileUserStatusRepository implements UserStatusRepository {
 
     private static final String TARGET_NAME = "UserStatus";
-    private static final String FILE_PATH = "data/userStatuses.ser";
+    private static final String FILE_PATH = "/userStatuses.ser";
 
     private final FileStore<Map<UUID, UserStatus>> fileStore;
 
-    public FileUserStatusRepository() {
-        this.fileStore = new FileStore<>(FILE_PATH, TARGET_NAME);
+    public FileUserStatusRepository(
+        @Value("${discodeit.repository.file-directory:data}") String fileDirectory
+    ) {
+        this.fileStore = new FileStore<>(fileDirectory + FILE_PATH, TARGET_NAME);
     }
 
     @Override

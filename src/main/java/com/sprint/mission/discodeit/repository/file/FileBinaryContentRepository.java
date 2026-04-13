@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
@@ -20,13 +21,16 @@ import org.springframework.stereotype.Repository;
     havingValue = "file"
 )
 public class FileBinaryContentRepository implements BinaryContentRepository {
+
     private static final String TARGET_NAME = "BinaryContent";
-    private static final String FILE_PATH = "data/binaryContents.ser";
+    private static final String FILE_PATH = "/binaryContents.ser";
 
     private final FileStore<Map<UUID, BinaryContent>> fileStore;
 
-    public FileBinaryContentRepository(){
-        this.fileStore = new FileStore<>(FILE_PATH, TARGET_NAME);
+    public FileBinaryContentRepository(
+        @Value("${discodeit.repository.file-directory:data}") String fileDirectory
+    ) {
+        this.fileStore = new FileStore<>(fileDirectory + FILE_PATH, TARGET_NAME);
     }
 
     @Override
