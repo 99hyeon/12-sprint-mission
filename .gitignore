@@ -56,3 +56,5 @@ bin/
 
 # Windows recycle bin
 $RECYCLE.BIN/
+
+data

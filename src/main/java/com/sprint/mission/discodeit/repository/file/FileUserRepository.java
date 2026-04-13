@@ -8,26 +8,51 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
+@Repository
+@ConditionalOnProperty(
+    prefix = "discodeit.repository",
+    name = "type",
+    havingValue = "file"
+)
 public class FileUserRepository implements UserRepository {
-    private final FileStore<Map<UUID, User>> fileStore;
+    private static final String TARGET_NAME = "User";
+    private static final String FILE_PATH = "data/users.ser";
 
-    public FileUserRepository(String filePath) {
-        this.fileStore = new FileStore<>(filePath, "User");
+
+    private final FileStore<Map<java.util.UUID, User>> fileStore;
+
+    public FileUserRepository() {
+        this.fileStore = new FileStore<>(FILE_PATH, TARGET_NAME);
     }
 
     @Override
     public User save(User user) {
-        Map<UUID, User> data = loadOrEmpty();
+        Map<java.util.UUID, User> data = loadOrEmpty();
         data.put(user.getId(), user);
         fileStore.save(data);
         return user;
     }
 
     @Override
-    public Optional<User> findById(UUID id) {
+    public Optional<User> findById(java.util.UUID id) {
         return Optional.ofNullable(loadOrEmpty().get(id));
+    }
+
+    @Override
+    public Optional<User> findByUserName(String userName) {
+        return loadOrEmpty().values().stream()
+            .filter(user -> user.getUserName().equals(userName))
+            .findFirst();
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return loadOrEmpty().values().stream()
+            .filter(user -> user.getEmail().equals(email))
+            .findFirst();
     }
 
     @Override
@@ -36,14 +61,14 @@ public class FileUserRepository implements UserRepository {
     }
 
     @Override
-    public void delete(UUID id) {
-        Map<UUID, User> data = loadOrEmpty();
+    public void delete(java.util.UUID id) {
+        Map<java.util.UUID, User> data = loadOrEmpty();
         data.remove(id);
         fileStore.save(data);
     }
 
-    private Map<UUID, User> loadOrEmpty() {
-        Map<UUID, User> data = fileStore.load();
+    private Map<java.util.UUID, User> loadOrEmpty() {
+        Map<java.util.UUID, User> data = fileStore.load();
         return data == null ? new HashMap<>() : data;
     }
 }

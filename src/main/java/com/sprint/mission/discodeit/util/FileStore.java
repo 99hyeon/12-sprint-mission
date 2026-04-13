@@ -28,7 +28,10 @@ public class FileStore<T> {
         } catch (EOFException e) {
             return null;
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(targetName + " 파일 읽기 실패", e);
+            throw new RuntimeException(
+                targetName + " 파일 읽기 실패 - path: " + file.getPath(),
+                e
+            );
         }
     }
 
@@ -41,7 +44,10 @@ public class FileStore<T> {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(data);
         } catch (IOException e) {
-            throw new RuntimeException(targetName + " 파일 저장 실패", e);
+            throw new RuntimeException(
+                targetName + " 파일 저장 실패 - path: " + file.getPath(),
+                e
+            );
         }
     }
 }

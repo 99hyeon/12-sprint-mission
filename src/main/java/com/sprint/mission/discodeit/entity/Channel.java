@@ -1,69 +1,31 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import java.util.UUID;
 
-public class Channel implements Serializable {
-    private static final long serialVersionUID = 1L;
+@Getter
+public class Channel extends BaseEntity {
 
-    private UUID id;
     private String name;
-    private boolean isPublic;
+    private ChannelType type;
     private String notiTitle;
     private String notiContents;
-    private List<Message> messages;
-    private List<User> users;
-    private Long createdAt;
-    private Long updatedAt;
+    private List<UUID> messages;
+    private List<UUID> users;
+    private Instant updatedAt;
 
-    public Channel(String name, boolean isPublic, String notiTitle, String notiContents) {
-        this.id = UUID.randomUUID();
+    public Channel(String name, ChannelType type, String notiTitle, String notiContents) {
+        super();
         this.name = name;
-        this.isPublic = isPublic;
+        this.type = type;
         this.notiTitle = notiTitle;
         this.notiContents = notiContents;
         this.messages = new ArrayList<>();
         this.users = new ArrayList<>();
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = System.currentTimeMillis();
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public boolean getIsPublic() {
-        return isPublic;
-    }
-
-    public String getNotiTitle() {
-        return notiTitle;
-    }
-
-    public String getNotiContents() {
-        return notiContents;
-    }
-
-    public List<Message> getMessages() {
-        return messages;
-    }
-
-    public List<User> getUsers() {
-        return users;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
+        this.updatedAt = Instant.now();
     }
 
     public void updateName(String name) {
@@ -71,8 +33,8 @@ public class Channel implements Serializable {
         updateUpdatedAt();
     }
 
-    public void updateIsPublic(boolean isPublic) {
-        this.isPublic = isPublic;
+    public void updateChannelType(ChannelType type) {
+        this.type = type;
         updateUpdatedAt();
     }
 
@@ -86,17 +48,41 @@ public class Channel implements Serializable {
         updateUpdatedAt();
     }
 
-    public void addMessages(Message message) {
-        this.messages.add(message);
+    public void addMessage(UUID messageId) {
+        this.messages.add(messageId);
         updateUpdatedAt();
     }
 
-    public void updateUsers(List<User> users) {
-        this.users = users;
+    public void addUser(UUID userId) {
+        if (!this.users.contains(userId)) {
+            this.users.add(userId);
+            updateUpdatedAt();
+        }
+    }
+
+    public void addUsers(List<UUID> userIds) {
+        boolean changed = false;
+
+        for (UUID userId : userIds) {
+            if (!this.users.contains(userId)) {
+                this.users.add(userId);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            updateUpdatedAt();
+        }
+    }
+
+    public void updateChannel(String name, String notiTitle, String notiContents){
+        this.name = name;
+        this.notiTitle = notiTitle;
+        this.notiContents = notiContents;
         updateUpdatedAt();
     }
 
     private void updateUpdatedAt() {
-        this.updatedAt = System.currentTimeMillis();
+        this.updatedAt = Instant.now();
     }
 }
