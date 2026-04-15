@@ -7,6 +7,9 @@ import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
@@ -109,19 +112,19 @@ public class BasicUserService implements UserService {
 
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId).orElseThrow(
-            () -> new IllegalArgumentException("존재하지 않는 사용자")
+            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
         );
     }
 
     private UserStatus getUserStatusOrThrow(UUID userId) {
         return userStatusRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalStateException("유저 상태 정보가 없습니다."));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USERSTATUS_NOT_FOUND.format(userId)));
     }
 
     private void validateDuplicateUser(UserCreateRequest request) {
         if (userRepository.findByUserName(request.userName()).isPresent()
             || userRepository.findByEmail(request.email()).isPresent()) {
-            throw new IllegalArgumentException("중복된 유저");
+            throw new BadRequestException(ErrorCode.USER_DUPLICATE.getMessage());
         }
     }
 
@@ -129,13 +132,13 @@ public class BasicUserService implements UserService {
         userRepository.findByEmail(request.email())
             .filter(found -> !found.getId().equals(request.id()))
             .ifPresent(found -> {
-                throw new IllegalArgumentException("이미 사용 중인 이메일");
+                throw new BadRequestException(ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
             });
 
         userRepository.findByUserName(request.userName())
             .filter(found -> !found.getId().equals(request.id()))
             .ifPresent(found -> {
-                throw new IllegalArgumentException("이미 사용 중인 userName");
+                throw new BadRequestException(ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUserName()));
             });
     }
 

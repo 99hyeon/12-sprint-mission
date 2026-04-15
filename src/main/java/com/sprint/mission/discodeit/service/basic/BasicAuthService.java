@@ -3,6 +3,9 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.auth.LoginRequest;
 import com.sprint.mission.discodeit.dto.auth.LoginResponse;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +19,11 @@ public class BasicAuthService implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email()).orElseThrow(
-            () -> new IllegalArgumentException("해당 이메일의 유저 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.USER_EMAIL_NOT_FOUND.format(request.email()))
         );
 
         if(!user.getPassword().equals(request.password())){
-            throw new IllegalArgumentException("비밀번호 틀림");
+            throw new BadRequestException(ErrorCode.WRONG_PASSWORD.getMessage());
         }
 
         return dtoFrom(user);

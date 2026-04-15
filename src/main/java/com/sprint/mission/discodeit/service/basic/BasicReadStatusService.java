@@ -4,6 +4,9 @@ import com.sprint.mission.discodeit.dto.readstatus.ReadStatusCreateRequest;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusResponse;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
@@ -28,7 +31,6 @@ public class BasicReadStatusService implements ReadStatusService {
         validateChannelExists(request.channelId());
         validateReadStatusNotExists(request.userId(), request.channelId());
 
-        //todo: 이거 엔티티에서 만들어서 반환해주는게 좋나?
         ReadStatus readStatus = new ReadStatus(
             request.userId(),
             request.channelId()
@@ -75,26 +77,26 @@ public class BasicReadStatusService implements ReadStatusService {
 
     private ReadStatus getReadStatusOrThrow(UUID id) {
         return readStatusRepository.findById(id).orElseThrow(
-            () -> new IllegalArgumentException("readStatus 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.READSTATUS_NOT_FOUND.format(id))
         );
     }
 
     private void validateUserExists(UUID userId) {
         userRepository.findById(userId).orElseThrow(
-            () -> new IllegalArgumentException("유저 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
         );
     }
 
     private void validateChannelExists(UUID channelId) {
         channelRepository.findById(channelId).orElseThrow(
-            () -> new IllegalArgumentException("채널 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
         );
     }
 
     private void validateReadStatusNotExists(UUID userId, UUID channelId) {
         readStatusRepository.findByUserIdAndChannelId(userId, channelId)
             .ifPresent(readStatus -> {
-                throw new IllegalArgumentException("readStatus 이미 존재 함");
+                throw new BadRequestException(ErrorCode.READSTATUS_ALREADY_EXIST.format(userId, channelId));
             });
     }
 

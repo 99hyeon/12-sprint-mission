@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-//todo: 이 어노테이션은 뭐야
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

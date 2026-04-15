@@ -10,6 +10,9 @@ import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
@@ -103,7 +106,7 @@ public class BasicChannelService implements ChannelService {
         Channel channel = getChannelOrThrow(request.id());
 
         if (channel.getType() == ChannelType.PRIVATE) {
-            throw new IllegalArgumentException("private은 수정 불가");
+            throw new BadRequestException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE.getMessage());
         }
 
         channel.updateChannel(request.name(), request.notiTitle(), request.notiContents());
@@ -121,12 +124,12 @@ public class BasicChannelService implements ChannelService {
 
     private Channel getChannelOrThrow(UUID channelId) {
         return channelRepository.findById(channelId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채널"));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId)));
     }
 
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저"));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
     }
 
     private boolean availableAccessChannel(Channel channel, UUID userId) {
