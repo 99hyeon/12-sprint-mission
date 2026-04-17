@@ -18,7 +18,11 @@ public class UserStatus extends BaseEntity {
     }
 
     public boolean isOnline(){
-        return Duration.between(updatedAt, Instant.now()).toMinutes() < 5;
+        return Duration.between(this.updatedAt, Instant.now()).toMinutes() < 5;
+    }
+
+    public void updateUpdatedAt(Instant newLastActiveAt){
+        this.updatedAt = newLastActiveAt;
     }
 
     public void updateUpdatedAt() {

@@ -26,14 +26,6 @@ public class BasicAuthService implements AuthService {
             throw new BadRequestException(ErrorCode.WRONG_PASSWORD.getMessage());
         }
 
-        return dtoFrom(user);
-    }
-
-    private LoginResponse dtoFrom(User user) {
-        return new LoginResponse(
-            user.getId(),
-            user.getEmail(),
-            user.getUserName()
-        );
+        return LoginResponse.from(user);
     }
 }

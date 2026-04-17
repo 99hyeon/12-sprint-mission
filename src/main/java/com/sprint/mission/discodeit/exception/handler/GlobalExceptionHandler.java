@@ -2,6 +2,8 @@ package com.sprint.mission.discodeit.exception.handler;
 
 import com.sprint.mission.discodeit.exception.custom.BadRequestException;
 import com.sprint.mission.discodeit.exception.ErrorResponse;
+import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
+import com.sprint.mission.discodeit.exception.custom.FileStoreException;
 import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,26 @@ public class GlobalExceptionHandler {
             .body(new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage()
+            ));
+    }
+
+    @ExceptionHandler(FileProcessingException.class)
+    public ResponseEntity<ErrorResponse> handleFileProcessing(FileProcessingException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                e.getMessage()
+            ));
+    }
+
+    @ExceptionHandler(FileStoreException.class)
+    public ResponseEntity<ErrorResponse> handleFileStore(FileStoreException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                 e.getMessage()
             ));
     }

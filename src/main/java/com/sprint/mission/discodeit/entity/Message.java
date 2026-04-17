@@ -20,7 +20,7 @@ public class Message extends BaseEntity {
         this.updatedAt = Instant.now();
     }
 
-    public void updateContent(String content){
+    public void changeContent(String content){
         this.content = content;
         updateUpdatedAt();
     }

@@ -24,7 +24,9 @@ public enum ErrorCode {
     BINARYCONTENT_NOT_FOUND("BinaryContent with id %s not found"),
 
     READSTATUS_NOT_FOUND("ReadStatus with id %s not found"),
-    READSTATUS_ALREADY_EXIST("ReadStatus with userId %s and channelId %s already exists");
+    READSTATUS_ALREADY_EXIST("ReadStatus with userId %s and channelId %s already exists"),
+
+    FILE_PROCESSING_ERROR("파일 처리 중 오류 발생");
 
     private final String message;
     ErrorCode(String message) {

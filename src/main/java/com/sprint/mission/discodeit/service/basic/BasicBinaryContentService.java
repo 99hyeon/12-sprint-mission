@@ -36,14 +36,14 @@ public class BasicBinaryContentService implements BinaryContentService {
         );
 
         BinaryContent savedBinaryContent = binaryContentRepository.save(binaryContent);
-        return dtoFrom(savedBinaryContent);
+        return BinaryContentResponse.from(savedBinaryContent);
     }
 
     @Override
     public BinaryContentResponse find(UUID id) {
         BinaryContent binaryContent = getBinaryContentOrThrow(id);
 
-        return dtoFrom(binaryContent);
+        return BinaryContentResponse.from(binaryContent);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class BasicBinaryContentService implements BinaryContentService {
         List<BinaryContent> binaryContents = binaryContentRepository.findByIdIn(ids);
 
         return binaryContents.stream()
-            .map(this::dtoFrom)
+            .map(BinaryContentResponse::from)
             .toList();
     }
 
@@ -88,16 +88,5 @@ public class BasicBinaryContentService implements BinaryContentService {
             );
         }
 
-    }
-
-    private BinaryContentResponse dtoFrom(BinaryContent binaryContent){
-        return new BinaryContentResponse(
-            binaryContent.getId(),
-            binaryContent.getFileName(),
-            binaryContent.getContentType(),
-            binaryContent.getData(),
-            binaryContent.getUserId(),
-            binaryContent.getMessageId()
-        );
     }
 }

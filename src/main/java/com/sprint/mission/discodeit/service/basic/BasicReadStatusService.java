@@ -3,6 +3,8 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusCreateRequest;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusResponse;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusUpdateRequest;
+import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.exception.ErrorCode;
 import com.sprint.mission.discodeit.exception.custom.BadRequestException;
@@ -24,11 +26,13 @@ public class BasicReadStatusService implements ReadStatusService {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
 
-
     @Override
     public ReadStatusResponse create(ReadStatusCreateRequest request) {
         validateUserExists(request.userId());
-        validateChannelExists(request.channelId());
+        Channel channel = getChannelOrThrow(request.channelId());
+        if (channel.getType() == ChannelType.PRIVATE) {
+            throw new BadRequestException(ErrorCode.READSTATUS_ALREADY_EXIST.format(request.userId(), request.channelId()));
+        }
         validateReadStatusNotExists(request.userId(), request.channelId());
 
         ReadStatus readStatus = new ReadStatus(
@@ -37,14 +41,14 @@ public class BasicReadStatusService implements ReadStatusService {
         );
 
         ReadStatus savedReadStatus = readStatusRepository.save(readStatus);
-        return dtoFrom(savedReadStatus);
+        return ReadStatusResponse.from(savedReadStatus);
     }
 
     @Override
     public ReadStatusResponse find(UUID id) {
         ReadStatus readStatus = getReadStatusOrThrow(id);
 
-        return dtoFrom(readStatus);
+        return ReadStatusResponse.from(readStatus);
     }
 
     @Override
@@ -53,20 +57,20 @@ public class BasicReadStatusService implements ReadStatusService {
         List<ReadStatus> readStatuses = readStatusRepository.findByUserId(userId);
 
         return readStatuses.stream()
-            .map(this::dtoFrom)
+            .map(ReadStatusResponse::from)
             .toList();
     }
 
     @Override
-    public ReadStatusResponse update(ReadStatusUpdateRequest request) {
-        ReadStatus readStatus = getReadStatusOrThrow(request.id());
+    public ReadStatusResponse update(UUID userStatusId, ReadStatusUpdateRequest request) {
+        ReadStatus readStatus = getReadStatusOrThrow(userStatusId);
 
         validateUserExists(request.userId());
         validateChannelExists(request.channelId());
 
-        readStatus.updateReadStatus(request.userId(), request.channelId());
-        ReadStatus updatedReadStatus = readStatusRepository.save(readStatus);
-        return dtoFrom(updatedReadStatus);
+        readStatus.changeReadStatus(request.userId(), request.channelId(), request.lastReadAt());
+        ReadStatus changedReadStatus = readStatusRepository.save(readStatus);
+        return ReadStatusResponse.from(changedReadStatus);
     }
 
     @Override
@@ -78,6 +82,12 @@ public class BasicReadStatusService implements ReadStatusService {
     private ReadStatus getReadStatusOrThrow(UUID id) {
         return readStatusRepository.findById(id).orElseThrow(
             () -> new ResourceNotFoundException(ErrorCode.READSTATUS_NOT_FOUND.format(id))
+        );
+    }
+
+    private Channel getChannelOrThrow(UUID channelId) {
+        return channelRepository.findById(channelId).orElseThrow(
+            () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
         );
     }
 
@@ -98,13 +108,5 @@ public class BasicReadStatusService implements ReadStatusService {
             .ifPresent(readStatus -> {
                 throw new BadRequestException(ErrorCode.READSTATUS_ALREADY_EXIST.format(userId, channelId));
             });
-    }
-
-    private ReadStatusResponse dtoFrom(ReadStatus readStatus){
-        return new ReadStatusResponse(
-            readStatus.getId(),
-            readStatus.getUserId(),
-            readStatus.getChannelId()
-        );
     }
 }

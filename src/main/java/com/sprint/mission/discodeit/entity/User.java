@@ -8,16 +8,14 @@ import lombok.Getter;
 public class User extends BaseEntity {
 
     private String email;
-    private String nickName;
     private String userName;
     private String password;
     private UUID profileImageId;
     private Instant updatedAt;
 
-    public User(String email, String nickName, String userName, String password, UUID profileImageId) {
+    public User(String email, String userName, String password, UUID profileImageId) {
         super();
         this.email = email;
-        this.nickName = nickName;
         this.userName = userName;
         this.password = password;
         this.profileImageId = profileImageId;
@@ -26,11 +24,6 @@ public class User extends BaseEntity {
 
     public void updateEmail(String email) {
         this.email = email;
-        updateUpdatedAt();
-    }
-
-    public void updateNickName(String nickName) {
-        this.nickName = nickName;
         updateUpdatedAt();
     }
 
@@ -44,11 +37,24 @@ public class User extends BaseEntity {
         updateUpdatedAt();
     }
 
-    public void updateProfile(String email, String nickName, String userName, UUID profileImageId){
-        this.email = email;
-        this.nickName = nickName;
-        this.userName = userName;
-        this.profileImageId = profileImageId;
+    public void changeProfile(String email, String userName, UUID profileImageId){
+        if (email != null) {
+            this.email = email;
+        }
+
+        if (userName != null) {
+            this.userName = userName;
+        }
+
+        if (profileImageId != null) {
+            this.profileImageId = profileImageId;
+        }
+
+        updateUpdatedAt();
+    }
+
+    public void removeProfileImg() {
+        this.profileImageId = null;
         updateUpdatedAt();
     }
 

@@ -75,10 +75,16 @@ public class Channel extends BaseEntity {
         }
     }
 
-    public void updateChannel(String name, String notiTitle, String notiContents){
-        this.name = name;
-        this.notiTitle = notiTitle;
-        this.notiContents = notiContents;
+    public void changeChannel(String name, String notiTitle, String notiContents){
+        if(name != null){
+            this.name = name;
+        }
+        if(notiTitle != null){
+            this.notiTitle = notiTitle;
+        }
+        if(notiContents != null){
+            this.notiContents = notiContents;
+        }
         updateUpdatedAt();
     }
 
