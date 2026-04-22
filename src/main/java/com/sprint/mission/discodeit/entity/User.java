@@ -1,50 +1,27 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serializable;
+import java.time.Instant;
 import java.util.UUID;
+import lombok.Getter;
 
-public class User implements Serializable {
-    private static final long serialVersionUID = 1L;
+@Getter
+public class User extends BaseEntity {
 
-    private UUID id;
     private String email;
     private String nickName;
     private String userName;
-    private Long createdAt;
-    private Long updatedAt;
+    private String password;
+    private UUID profileImageId;
+    private Instant updatedAt;
 
-    public User(String email, String nickName, String userName) {
-        this.id = UUID.randomUUID();
+    public User(String email, String nickName, String userName, String password, UUID profileImageId) {
+        super();
         this.email = email;
         this.nickName = nickName;
         this.userName = userName;
-
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = System.currentTimeMillis();
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getNickName() {
-        return nickName;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
+        this.password = password;
+        this.profileImageId = profileImageId;
+        this.updatedAt = Instant.now();
     }
 
     public void updateEmail(String email) {
@@ -62,7 +39,20 @@ public class User implements Serializable {
         updateUpdatedAt();
     }
 
+    public void updateProfileImageId(UUID profileImageId) {
+        this.profileImageId = profileImageId;
+        updateUpdatedAt();
+    }
+
+    public void updateProfile(String email, String nickName, String userName, UUID profileImageId){
+        this.email = email;
+        this.nickName = nickName;
+        this.userName = userName;
+        this.profileImageId = profileImageId;
+        updateUpdatedAt();
+    }
+
     private void updateUpdatedAt() {
-        this.updatedAt = System.currentTimeMillis();
+        this.updatedAt = Instant.now();
     }
 }

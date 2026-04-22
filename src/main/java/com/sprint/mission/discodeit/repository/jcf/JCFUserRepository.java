@@ -7,10 +7,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
+@Repository
+@ConditionalOnProperty(
+    prefix = "discodeit.repository",
+    name = "type",
+    havingValue = "jcf",
+    matchIfMissing = true
+)
 public class JCFUserRepository implements UserRepository {
-    private final Map<UUID, User> data;
+    private final Map<java.util.UUID, User> data;
 
     public JCFUserRepository() {
         this.data = new HashMap<>();
@@ -23,8 +31,22 @@ public class JCFUserRepository implements UserRepository {
     }
 
     @Override
-    public Optional<User> findById(UUID id) {
+    public Optional<User> findById(java.util.UUID id) {
         return Optional.ofNullable(data.get(id));
+    }
+
+    @Override
+    public Optional<User> findByUserName(String userName) {
+        return data.values().stream()
+            .filter(user -> user.getUserName().equals(userName))
+            .findFirst();
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return data.values().stream()
+            .filter(user -> user.getEmail().equals(email))
+            .findFirst();
     }
 
     @Override
@@ -33,7 +55,7 @@ public class JCFUserRepository implements UserRepository {
     }
 
     @Override
-    public void delete(UUID id) {
+    public void delete(java.util.UUID id) {
         data.remove(id);
     }
 }

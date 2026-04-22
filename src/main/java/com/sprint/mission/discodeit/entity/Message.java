@@ -1,59 +1,23 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.io.Serializable;
+import java.time.Instant;
+import lombok.Getter;
 import java.util.UUID;
 
-public class Message implements Serializable {
-    private static final long serialVersionUID = 1L;
+@Getter
+public class Message extends BaseEntity {
 
-    private UUID id;
-    private Channel channel;
-    private User user;
     private String content;
-    private Long createdAt;
-    private Long updatedAt;
+    private UUID channelId;
+    private UUID userId;
+    private Instant updatedAt;
 
-    public Message(Channel channel, User user, String content) {
-        this.channel = channel;
-        this.user = user;
+    public Message(String content, UUID channelId, UUID userId) {
+        super();
         this.content = content;
-        this.id = UUID.randomUUID();
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = System.currentTimeMillis();
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public Channel getChannel(){
-        return channel;
-    }
-
-    public User getUser(){
-        return user;
-    }
-
-    public String getContent(){
-        return content;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void updateChannel(Channel channel){
-        this.channel = channel;
-        updateUpdatedAt();
-    }
-
-    public void updateUser(User user){
-        this.user = user;
-        updateUpdatedAt();
+        this.channelId = channelId;
+        this.userId = userId;
+        this.updatedAt = Instant.now();
     }
 
     public void updateContent(String content){
@@ -61,7 +25,17 @@ public class Message implements Serializable {
         updateUpdatedAt();
     }
 
+    public void updateChannelId(UUID channelId){
+        this.channelId = channelId;
+        updateUpdatedAt();
+    }
+
+    public void updateUserId(UUID userId){
+        this.userId = userId;
+        updateUpdatedAt();
+    }
+
     private void updateUpdatedAt() {
-        this.updatedAt = System.currentTimeMillis();
+        this.updatedAt = Instant.now();
     }
 }

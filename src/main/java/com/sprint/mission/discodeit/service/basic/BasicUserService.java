@@ -1,44 +1,165 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+@Service
+@RequiredArgsConstructor
 public class BasicUserService implements UserService {
+
     private final UserRepository userRepository;
-
-    public BasicUserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final UserStatusRepository userStatusRepository;
+    private final BinaryContentRepository binaryContentRepository;
 
     @Override
-    public User create(User user) {
-        return userRepository.save(user);
-    }
+    public UserResponse create(UserCreateRequest request) {
+        validateDuplicateUser(request);
 
-    @Override
-    public Optional<User> read(UUID id) {
-        return userRepository.findById(id);
-    }
-
-    @Override
-    public List<User> readAll() {
-        return userRepository.findAll();
-    }
-
-    @Override
-    public User update(User user) {
-        userRepository.findById(user.getId()).orElseThrow(
-            () -> {throw new IllegalArgumentException("존재하지 않는 사용자");}
+        User user = new User(
+            request.email(),
+            request.nickName(),
+            request.userName(),
+            request.password(),
+            null
         );
-        return userRepository.save(user);
+
+        if (request.profileImage() != null) {
+            UUID profileImageId = saveProfileImage(user, request.profileImage());
+            user.updateProfileImageId(profileImageId);
+        }
+
+        UserStatus userStatus = new UserStatus(user.getId());
+        userStatusRepository.save(userStatus);
+
+        userRepository.save(user);
+        return dtoFrom(user, userStatus);
+    }
+
+    @Override
+    public UserResponse find(UUID id) {
+        User user = getUserOrThrow(id);
+
+        UserStatus userStatus = getUserStatusOrThrow(id);
+
+        return dtoFrom(user, userStatus);
+    }
+
+    @Override
+    public List<UserResponse> findAll() {
+        return userRepository.findAll().stream()
+            .map(user -> dtoFrom(
+                user, getUserStatusOrThrow(user.getId())
+            ))
+            .toList();
+    }
+
+    @Override
+    public UserResponse update(UserUpdateRequest request) {
+        User user = getUserOrThrow(request.id());
+
+        validateDuplicateForUpdate(request);
+
+        UUID profileImageId = user.getProfileImageId();
+        if (request.profileImage() != null) {
+            if (profileImageId != null) {
+                binaryContentRepository.delete(profileImageId);
+            }
+
+            profileImageId = saveProfileImage(user, request.profileImage());
+        }
+
+        user.updateProfile(
+            request.email(),
+            request.nickName(),
+            request.userName(),
+            profileImageId
+        );
+        userRepository.save(user);
+
+        UserStatus userStatus = getUserStatusOrThrow(user.getId());
+        return dtoFrom(user, userStatus);
     }
 
     @Override
     public void delete(UUID id) {
+        User user = getUserOrThrow(id);
+
+        if (user.getProfileImageId() != null) {
+            binaryContentRepository.delete(user.getProfileImageId());
+        }
+
+        userStatusRepository.findByUserId(user.getId())
+            .ifPresent(userStatus -> userStatusRepository.delete(userStatus.getId()));
+
         userRepository.delete(id);
+    }
+
+    private User getUserOrThrow(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(
+            () -> new IllegalArgumentException("존재하지 않는 사용자")
+        );
+    }
+
+    private UserStatus getUserStatusOrThrow(UUID userId) {
+        return userStatusRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalStateException("유저 상태 정보가 없습니다."));
+    }
+
+    private void validateDuplicateUser(UserCreateRequest request) {
+        if (userRepository.findByUserName(request.userName()).isPresent()
+            || userRepository.findByEmail(request.email()).isPresent()) {
+            throw new IllegalArgumentException("중복된 유저");
+        }
+    }
+
+    private void validateDuplicateForUpdate(UserUpdateRequest request) {
+        userRepository.findByEmail(request.email())
+            .filter(found -> !found.getId().equals(request.id()))
+            .ifPresent(found -> {
+                throw new IllegalArgumentException("이미 사용 중인 이메일");
+            });
+
+        userRepository.findByUserName(request.userName())
+            .filter(found -> !found.getId().equals(request.id()))
+            .ifPresent(found -> {
+                throw new IllegalArgumentException("이미 사용 중인 userName");
+            });
+    }
+
+    private UUID saveProfileImage(User user, BinaryContentCreateRequest request) {
+        BinaryContent profileImage = new BinaryContent(
+            request.fileName(),
+            request.contentType(),
+            request.data(),
+            user.getId(),
+            null
+        );
+        binaryContentRepository.save(profileImage);
+
+        return profileImage.getId();
+    }
+
+    private UserResponse dtoFrom(User user, UserStatus status) {
+        return new UserResponse(
+            user.getId(),
+            user.getEmail(),
+            user.getNickName(),
+            user.getUserName(),
+            user.getProfileImageId(),
+            status.isOnline()
+        );
     }
 }
