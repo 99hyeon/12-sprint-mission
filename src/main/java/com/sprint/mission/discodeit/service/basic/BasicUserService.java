@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserResponse;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
@@ -60,9 +61,9 @@ public class BasicUserService implements UserService {
     }
 
     @Override
-    public List<UserResponse> findAll() {
+    public List<UserDto> findAll() {
         return userRepository.findAll().stream()
-            .map(UserResponse::from)
+            .map(user -> UserDto.from(user, getUserStatusOrThrow(user.getId())))
             .toList();
     }
 
@@ -108,6 +109,12 @@ public class BasicUserService implements UserService {
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId).orElseThrow(
             () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
+        );
+    }
+
+    private UserStatus getUserStatusOrThrow(UUID userId) {
+        return userStatusRepository.findByUserId(userId).orElseThrow(
+            () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
         );
     }
 
