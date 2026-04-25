@@ -35,9 +35,8 @@ public class BasicChannelService implements ChannelService {
 
     @Override
     public ChannelResponse createPublic(ChannelPublicCreateRequest request) {
-        Channel channel = new Channel(
+        Channel channel = Channel.createPublic(
             request.name(),
-            ChannelType.PUBLIC,
             request.notiTitle(),
             request.notiContents()
         );
@@ -47,18 +46,10 @@ public class BasicChannelService implements ChannelService {
 
     @Override
     public ChannelResponse createPrivate(ChannelPrivateCreateRequest request) {
-        Channel channel = new Channel(
-            request.name(),
-            ChannelType.PRIVATE,
-            null,
-            null
-        );
+        Channel channel = Channel.createPrivate(request.name());
 
-        List<UUID> users = new ArrayList<>();
         for (UUID userId : request.memberUserIds()) {
             User user = getUserOrThrow(userId);
-
-            users.add(user.getId());
 
             ReadStatus readStatus = new ReadStatus(
                 user.getId(),
@@ -67,7 +58,6 @@ public class BasicChannelService implements ChannelService {
             readStatusRepository.save(readStatus);
         }
 
-        channel.addUsers(users);
         channelRepository.save(channel);
         return ChannelResponse.from(channel);
     }
@@ -78,7 +68,9 @@ public class BasicChannelService implements ChannelService {
         Message recentMessage = messageRepository.findRecentlyByChannelId(channel.getId())
             .orElse(null);
 
-        return ChannelFindResponse.from(channel, recentMessage);
+        List<UUID> userIds = getParticipantUserIds(channel);
+
+        return ChannelFindResponse.from(channel, recentMessage, userIds);
     }
 
     @Override
@@ -94,7 +86,8 @@ public class BasicChannelService implements ChannelService {
 
             Message recentMessage = messageRepository.findRecentlyByChannelId(channel.getId())
                 .orElse(null);
-            responses.add(ChannelFindResponse.from(channel, recentMessage));
+            List<UUID> userIds = getParticipantUserIds(channel);
+            responses.add(ChannelFindResponse.from(channel, recentMessage, userIds));
         }
 
         return responses;
@@ -136,7 +129,20 @@ public class BasicChannelService implements ChannelService {
             return true;
         }
 
-        return channel.getType() == ChannelType.PRIVATE
-            && channel.getUsers().contains(userId);
+        if (channel.getType() == ChannelType.PRIVATE) {
+            return readStatusRepository.findByUserIdAndChannelId(userId, channel.getId()).isPresent();
+        }
+
+        return false;
+    }
+
+    private List<UUID> getParticipantUserIds(Channel channel) {
+        if (channel.getType() == ChannelType.PUBLIC) {
+            return List.of();
+        }
+
+        return readStatusRepository.findByChannelId(channel.getId()).stream()
+            .map(ReadStatus::getUserId)
+            .toList();
     }
 }

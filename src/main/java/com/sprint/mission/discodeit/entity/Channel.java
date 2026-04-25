@@ -14,18 +14,24 @@ public class Channel extends BaseEntity {
     private String notiTitle;
     private String notiContents;
     private List<UUID> messages;
-    private List<UUID> users;
     private Instant updatedAt;
 
-    public Channel(String name, ChannelType type, String notiTitle, String notiContents) {
+    private Channel(String name, ChannelType type, String notiTitle, String notiContents) {
         super();
         this.name = name;
         this.type = type;
         this.notiTitle = notiTitle;
         this.notiContents = notiContents;
         this.messages = new ArrayList<>();
-        this.users = new ArrayList<>();
         this.updatedAt = Instant.now();
+    }
+
+    public static Channel createPublic(String name, String notiTitle, String notiContents) {
+        return new Channel(name, ChannelType.PUBLIC, notiTitle, notiContents);
+    }
+
+    public static Channel createPrivate(String name) {
+        return new Channel(name, ChannelType.PRIVATE, null, null);
     }
 
     public void updateName(String name) {
@@ -51,28 +57,6 @@ public class Channel extends BaseEntity {
     public void addMessage(UUID messageId) {
         this.messages.add(messageId);
         updateUpdatedAt();
-    }
-
-    public void addUser(UUID userId) {
-        if (!this.users.contains(userId)) {
-            this.users.add(userId);
-            updateUpdatedAt();
-        }
-    }
-
-    public void addUsers(List<UUID> userIds) {
-        boolean changed = false;
-
-        for (UUID userId : userIds) {
-            if (!this.users.contains(userId)) {
-                this.users.add(userId);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            updateUpdatedAt();
-        }
     }
 
     public void changeChannel(String name, String notiTitle, String notiContents){
