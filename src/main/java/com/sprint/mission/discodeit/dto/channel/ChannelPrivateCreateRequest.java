@@ -5,5 +5,7 @@ import java.util.UUID;
 
 public record ChannelPrivateCreateRequest(
     String name,
-    List<UUID> memberUserIds
-) {}
+    List<UUID> participantIds
+) {
+
+}

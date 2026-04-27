@@ -11,27 +11,25 @@ public class Channel extends BaseEntity {
 
     private String name;
     private ChannelType type;
-    private String notiTitle;
-    private String notiContents;
+    private String description;
     private List<UUID> messages;
     private Instant updatedAt;
 
-    private Channel(String name, ChannelType type, String notiTitle, String notiContents) {
+    private Channel(String name, ChannelType type, String description) {
         super();
         this.name = name;
         this.type = type;
-        this.notiTitle = notiTitle;
-        this.notiContents = notiContents;
+        this.description = description;
         this.messages = new ArrayList<>();
         this.updatedAt = Instant.now();
     }
 
-    public static Channel createPublic(String name, String notiTitle, String notiContents) {
-        return new Channel(name, ChannelType.PUBLIC, notiTitle, notiContents);
+    public static Channel createPublic(String name, String description) {
+        return new Channel(name, ChannelType.PUBLIC, description);
     }
 
     public static Channel createPrivate(String name) {
-        return new Channel(name, ChannelType.PRIVATE, null, null);
+        return new Channel(name, ChannelType.PRIVATE, null);
     }
 
     public void updateName(String name) {
@@ -44,13 +42,8 @@ public class Channel extends BaseEntity {
         updateUpdatedAt();
     }
 
-    public void updateNotiTitle(String notiTitle) {
-        this.notiTitle = notiTitle;
-        updateUpdatedAt();
-    }
-
-    public void updateNotiContents(String notiContents) {
-        this.notiContents = notiContents;
+    public void updateDescription(String description) {
+        this.description = description;
         updateUpdatedAt();
     }
 
@@ -59,15 +52,12 @@ public class Channel extends BaseEntity {
         updateUpdatedAt();
     }
 
-    public void changeChannel(String name, String notiTitle, String notiContents){
-        if(name != null){
+    public void changeChannel(String name, String description) {
+        if (name != null) {
             this.name = name;
         }
-        if(notiTitle != null){
-            this.notiTitle = notiTitle;
-        }
-        if(notiContents != null){
-            this.notiContents = notiContents;
+        if (description != null) {
+            this.description = description;
         }
         updateUpdatedAt();
     }

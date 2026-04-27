@@ -1,9 +1,26 @@
 package com.sprint.mission.discodeit.dto.userstatus;
 
+import com.sprint.mission.discodeit.entity.UserStatus;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UserStatusResponse(
     UUID id,
+    Instant createdAt,
+    Instant updatedAt,
     UUID userId,
-    boolean isOnline
-) {}
+    Instant lastActiveAt,
+    boolean online
+) {
+
+    public static UserStatusResponse from(UserStatus userStatus) {
+        return new UserStatusResponse(
+            userStatus.getId(),
+            userStatus.getCreatedAt(),
+            userStatus.getUpdatedAt(),
+            userStatus.getUserId(),
+            userStatus.getUpdatedAt(),
+            userStatus.isOnline()
+        );
+    }
+}
