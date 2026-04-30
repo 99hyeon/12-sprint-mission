@@ -8,6 +8,8 @@ import lombok.Getter;
 @Getter
 public class UserStatus extends BaseEntity {
 
+    private static final long ONLINE_THRESHOLD_MINUTES = 5;
+
     private UUID userId;
     private Instant updatedAt;
 
@@ -18,7 +20,11 @@ public class UserStatus extends BaseEntity {
     }
 
     public boolean isOnline(){
-        return Duration.between(updatedAt, Instant.now()).toMinutes() < 5;
+        return Duration.between(this.updatedAt, Instant.now()).toMinutes() < ONLINE_THRESHOLD_MINUTES;
+    }
+
+    public void updateUpdatedAt(Instant newLastActiveAt){
+        this.updatedAt = newLastActiveAt;
     }
 
     public void updateUpdatedAt() {

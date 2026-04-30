@@ -4,6 +4,9 @@ import com.sprint.mission.discodeit.dto.userstatus.UserStatusCreateRequest;
 import com.sprint.mission.discodeit.dto.userstatus.UserStatusResponse;
 import com.sprint.mission.discodeit.dto.userstatus.UserStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserStatusService;
@@ -59,10 +62,10 @@ public class BasicUserStatusService implements UserStatusService {
     }
 
     @Override
-    public UserStatusResponse updateByUserId(UUID userId) {
+    public UserStatusResponse updateByUserId(UUID userId, UserStatusUpdateRequest request) {
         UserStatus userStatus = getUserStatusByUserIdOrThrow(userId);
 
-        userStatus.updateUpdatedAt();
+        userStatus.updateUpdatedAt(request.newLastActiveAt());
         UserStatus updatedUserStatus = userStatusRepository.save(userStatus);
 
         return dtoFrom(updatedUserStatus);
@@ -76,25 +79,25 @@ public class BasicUserStatusService implements UserStatusService {
 
     private UserStatus getUserStatusOrThrow(UUID id) {
         return userStatusRepository.findById(id).orElseThrow(
-            () -> new IllegalArgumentException("userStatus 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_NOT_FOUND.format(id))
         );
     }
 
     private UserStatus getUserStatusByUserIdOrThrow(UUID userId) {
         return userStatusRepository.findByUserId(userId).orElseThrow(
-            () -> new IllegalArgumentException("userStatus 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
         );
     }
 
     private void validateUserExists(UUID userId) {
         userRepository.findById(userId).orElseThrow(
-            () -> new IllegalArgumentException("user 존재 안 함")
+            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
         );
     }
 
     private void validateUserStatusNotExists(UUID userId) {
         userStatusRepository.findByUserId(userId).ifPresent(userStatus -> {
-            throw new IllegalArgumentException("userStatus 이미 존재함");
+            throw new BadRequestException(ErrorCode.USERSTATUS_ALREADY_EXIST.format(userId));
         });
     }
 

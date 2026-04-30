@@ -1,22 +1,25 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentCreateRequest;
-import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
 import com.sprint.mission.discodeit.dto.message.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.MessageResponse;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +31,7 @@ public class BasicMessageService implements MessageService {
     private final UserRepository userRepository;
 
     @Override
-    public MessageResponse create(MessageCreateRequest request) {
+    public MessageResponse create(MessageCreateRequest request, List<MultipartFile> files) {
         validateUserExists(request.userId());
         validateChannelExists(request.channelId());
 
@@ -39,21 +42,27 @@ public class BasicMessageService implements MessageService {
         );
         messageRepository.save(message);
 
-        List<BinaryContent> files = new ArrayList<>();
-        for (BinaryContentCreateRequest file : request.files()) {
-            BinaryContent binaryContent = new BinaryContent(
-                file.fileName(),
-                file.contentType(),
-                file.data(),
-                null,
-                message.getId()
-            );
+        List<BinaryContent> binaryContents = new ArrayList<>();
+        if(files != null){
+            for(MultipartFile file : files){
+                try{
+                    BinaryContent binaryContent = new BinaryContent(
+                        file.getOriginalFilename(),
+                        file.getContentType(),
+                        file.getBytes(),
+                        null,
+                        message.getId()
+                    );
+                    binaryContents.add(binaryContent);
 
-            files.add(binaryContent);
+                } catch (IOException e){
+                    throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
+                }
+            }
         }
-        binaryContentRepository.saveAll(files);
+        binaryContentRepository.saveAll(binaryContents);
 
-        return dtoFrom(message, files);
+        return MessageResponse.from(message, binaryContents);
     }
 
     @Override
@@ -61,7 +70,7 @@ public class BasicMessageService implements MessageService {
         Message message = getMessageOrThrow(id);
         List<BinaryContent> files = binaryContentRepository.findByMessageId(id);
 
-        return dtoFrom(message, files);
+        return MessageResponse.from(message, files);
     }
 
     @Override
@@ -72,23 +81,23 @@ public class BasicMessageService implements MessageService {
         List<MessageResponse> responses = new ArrayList<>();
         for (Message message : messages) {
             List<BinaryContent> files = binaryContentRepository.findByMessageId(message.getId());
-            responses.add(dtoFrom(message, files));
+            responses.add(MessageResponse.from(message, files));
         }
 
         return responses;
     }
 
     @Override
-    public MessageResponse update(MessageUpdateRequest request) {
-        Message message = getMessageOrThrow(request.id());
+    public MessageResponse update(UUID messageId, MessageUpdateRequest request) {
+        Message message = getMessageOrThrow(messageId);
         validateUserExists(message.getUserId());
         validateChannelExists(message.getChannelId());
 
-        message.updateContent(request.content());
+        message.changeContent(request.content());
         message = messageRepository.save(message);
-        List<BinaryContent> files = binaryContentRepository.findByMessageId(request.id());
+        List<BinaryContent> files = binaryContentRepository.findByMessageId(messageId);
 
-        return dtoFrom(message, files);
+        return MessageResponse.from(message, files);
     }
 
     @Override
@@ -101,41 +110,18 @@ public class BasicMessageService implements MessageService {
 
     private Message getMessageOrThrow(UUID messageId) {
         return messageRepository.findById(messageId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메세지"));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId)));
     }
 
     private void validateUserExists(UUID userId) {
         userRepository.findById(userId).orElseThrow(
-            () -> new IllegalArgumentException("존재하지 않는 사용자")
+            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
         );
     }
 
     private void validateChannelExists(UUID channelId) {
         channelRepository.findById(channelId).orElseThrow(
-            () -> new IllegalArgumentException("존재하지 않는 채널")
+            () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
         );
-    }
-
-    private MessageResponse dtoFrom(Message message, List<BinaryContent> files) {
-        return new MessageResponse(
-            message.getId(),
-            message.getContent(),
-            message.getChannelId(),
-            message.getUserId(),
-            dtoFrom(files)
-        );
-    }
-
-    private List<BinaryContentResponse> dtoFrom(List<BinaryContent> files) {
-        return files.stream()
-            .map(file -> new BinaryContentResponse(
-                file.getId(),
-                file.getFileName(),
-                file.getContentType(),
-                file.getData(),
-                file.getUserId(),
-                file.getMessageId()
-            ))
-            .toList();
     }
 }

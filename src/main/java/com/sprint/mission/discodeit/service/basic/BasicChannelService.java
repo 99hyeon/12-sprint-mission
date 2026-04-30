@@ -10,12 +10,14 @@ import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
-import java.time.Instant;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,30 +35,21 @@ public class BasicChannelService implements ChannelService {
 
     @Override
     public ChannelResponse createPublic(ChannelPublicCreateRequest request) {
-        Channel channel = new Channel(
+        Channel channel = Channel.createPublic(
             request.name(),
-            ChannelType.PUBLIC,
             request.notiTitle(),
             request.notiContents()
         );
 
-        return channelResponseDtoFrom(channelRepository.save(channel));
+        return ChannelResponse.from(channelRepository.save(channel));
     }
 
     @Override
     public ChannelResponse createPrivate(ChannelPrivateCreateRequest request) {
-        Channel channel = new Channel(
-            null,
-            ChannelType.PRIVATE,
-            null,
-            null
-        );
+        Channel channel = Channel.createPrivate(request.name());
 
-        List<UUID> users = new ArrayList<>();
         for (UUID userId : request.memberUserIds()) {
             User user = getUserOrThrow(userId);
-
-            users.add(user.getId());
 
             ReadStatus readStatus = new ReadStatus(
                 user.getId(),
@@ -65,9 +58,8 @@ public class BasicChannelService implements ChannelService {
             readStatusRepository.save(readStatus);
         }
 
-        channel.addUsers(users);
         channelRepository.save(channel);
-        return channelResponseDtoFrom(channel);
+        return ChannelResponse.from(channel);
     }
 
     @Override
@@ -76,7 +68,9 @@ public class BasicChannelService implements ChannelService {
         Message recentMessage = messageRepository.findRecentlyByChannelId(channel.getId())
             .orElse(null);
 
-        return channelFindResponseDtoFrom(channel, recentMessage);
+        List<UUID> userIds = getParticipantUserIds(channel);
+
+        return ChannelFindResponse.from(channel, recentMessage, userIds);
     }
 
     @Override
@@ -92,22 +86,23 @@ public class BasicChannelService implements ChannelService {
 
             Message recentMessage = messageRepository.findRecentlyByChannelId(channel.getId())
                 .orElse(null);
-            responses.add(channelFindResponseDtoFrom(channel, recentMessage));
+            List<UUID> userIds = getParticipantUserIds(channel);
+            responses.add(ChannelFindResponse.from(channel, recentMessage, userIds));
         }
 
         return responses;
     }
 
     @Override
-    public ChannelResponse update(ChannelUpdateRequest request) {
-        Channel channel = getChannelOrThrow(request.id());
+    public ChannelResponse update(UUID channelId, ChannelUpdateRequest request) {
+        Channel channel = getChannelOrThrow(channelId);
 
         if (channel.getType() == ChannelType.PRIVATE) {
-            throw new IllegalArgumentException("private은 수정 불가");
+            throw new BadRequestException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE.getMessage());
         }
 
-        channel.updateChannel(request.name(), request.notiTitle(), request.notiContents());
-        return channelResponseDtoFrom(channel);
+        channel.changeChannel(request.name(), request.notiTitle(), request.notiContents());
+        return ChannelResponse.from(channel);
     }
 
     @Override
@@ -121,12 +116,12 @@ public class BasicChannelService implements ChannelService {
 
     private Channel getChannelOrThrow(UUID channelId) {
         return channelRepository.findById(channelId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채널"));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId)));
     }
 
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저"));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
     }
 
     private boolean availableAccessChannel(Channel channel, UUID userId) {
@@ -134,32 +129,20 @@ public class BasicChannelService implements ChannelService {
             return true;
         }
 
-        return channel.getType() == ChannelType.PRIVATE
-            && channel.getUsers().contains(userId);
-    }
-
-    private ChannelResponse channelResponseDtoFrom(Channel channel) {
-        return new ChannelResponse(
-            channel.getId(),
-            channel.getName(),
-            channel.getType()
-        );
-    }
-
-    private ChannelFindResponse channelFindResponseDtoFrom(Channel channel, Message recentMessage) {
-        Instant messageCreatedAt = recentMessage == null ? null : recentMessage.getUpdatedAt();
-
-        List<UUID> users = new ArrayList<>();
         if (channel.getType() == ChannelType.PRIVATE) {
-            users = new ArrayList<>(channel.getUsers());
+            return readStatusRepository.findByUserIdAndChannelId(userId, channel.getId()).isPresent();
         }
 
-        return new ChannelFindResponse(
-            channel.getId(),
-            channel.getName(),
-            channel.getType(),
-            messageCreatedAt,
-            users
-        );
+        return false;
+    }
+
+    private List<UUID> getParticipantUserIds(Channel channel) {
+        if (channel.getType() == ChannelType.PUBLIC) {
+            return List.of();
+        }
+
+        return readStatusRepository.findByChannelId(channel.getId()).stream()
+            .map(ReadStatus::getUserId)
+            .toList();
     }
 }

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -23,7 +24,7 @@ public class FileUserRepository implements UserRepository {
     private static final String FILE_PATH = "/users.ser";
 
 
-    private final FileStore<Map<java.util.UUID, User>> fileStore;
+    private final FileStore<Map<UUID, User>> fileStore;
 
     public FileUserRepository(
         @Value("${discodeit.repository.file-directory:data}") String fileDirectory
@@ -33,14 +34,14 @@ public class FileUserRepository implements UserRepository {
 
     @Override
     public User save(User user) {
-        Map<java.util.UUID, User> data = loadOrEmpty();
+        Map<UUID, User> data = loadOrEmpty();
         data.put(user.getId(), user);
         fileStore.save(data);
         return user;
     }
 
     @Override
-    public Optional<User> findById(java.util.UUID id) {
+    public Optional<User> findById(UUID id) {
         return Optional.ofNullable(loadOrEmpty().get(id));
     }
 
@@ -64,14 +65,14 @@ public class FileUserRepository implements UserRepository {
     }
 
     @Override
-    public void delete(java.util.UUID id) {
-        Map<java.util.UUID, User> data = loadOrEmpty();
+    public void delete(UUID id) {
+        Map<UUID, User> data = loadOrEmpty();
         data.remove(id);
         fileStore.save(data);
     }
 
-    private Map<java.util.UUID, User> loadOrEmpty() {
-        Map<java.util.UUID, User> data = fileStore.load();
+    private Map<UUID, User> loadOrEmpty() {
+        Map<UUID, User> data = fileStore.load();
         return data == null ? new HashMap<>() : data;
     }
 }

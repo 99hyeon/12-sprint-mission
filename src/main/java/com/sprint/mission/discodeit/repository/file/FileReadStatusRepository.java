@@ -54,6 +54,13 @@ public class FileReadStatusRepository implements ReadStatusRepository {
     }
 
     @Override
+    public List<ReadStatus> findByChannelId(UUID channelId) {
+        return loadOrEmpty().values().stream()
+            .filter(readStatus -> readStatus.getChannelId().equals(channelId))
+            .toList();
+    }
+
+    @Override
     public Optional<ReadStatus> findByUserIdAndChannelId(UUID userId, UUID channelId) {
         return loadOrEmpty().values().stream()
             .filter(readStatus -> readStatus.getUserId().equals(userId))

@@ -3,6 +3,9 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.BadRequestException;
+import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
@@ -33,14 +36,14 @@ public class BasicBinaryContentService implements BinaryContentService {
         );
 
         BinaryContent savedBinaryContent = binaryContentRepository.save(binaryContent);
-        return dtoFrom(savedBinaryContent);
+        return BinaryContentResponse.from(savedBinaryContent);
     }
 
     @Override
-    public BinaryContentResponse find(UUID id) {
+    public BinaryContent find(UUID id) {
         BinaryContent binaryContent = getBinaryContentOrThrow(id);
 
-        return dtoFrom(binaryContent);
+        return binaryContent;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class BasicBinaryContentService implements BinaryContentService {
         List<BinaryContent> binaryContents = binaryContentRepository.findByIdIn(ids);
 
         return binaryContents.stream()
-            .map(this::dtoFrom)
+            .map(BinaryContentResponse::from)
             .toList();
     }
 
@@ -64,37 +67,26 @@ public class BasicBinaryContentService implements BinaryContentService {
 
     private BinaryContent getBinaryContentOrThrow(UUID id) {
         return binaryContentRepository.findById(id).orElseThrow(
-            () -> new IllegalArgumentException("파일 없음")
+            () -> new ResourceNotFoundException(ErrorCode.BINARYCONTENT_NOT_FOUND.format(id))
         );
     }
 
     private void validateOwnerExists(UUID userId, UUID messageId) {
         if (userId == null && messageId == null) {
-            throw new IllegalArgumentException("userId와 messageId는 둘 다 null일 수 없습니다.");
+            throw new BadRequestException(ErrorCode.USER_ID_AND_MESSAGE_ID_MUST_NOT_BE_NULL.getMessage());
         }
 
         if (userId != null) {
             userRepository.findById(userId).orElseThrow(
-                () -> new IllegalArgumentException("유저 존재 안함")
+                () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
             );
         }
 
         if (messageId != null) {
             messageRepository.findById(messageId).orElseThrow(
-                () -> new IllegalArgumentException("메세지 존재 안함")
+                () -> new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId))
             );
         }
 
-    }
-
-    private BinaryContentResponse dtoFrom(BinaryContent binaryContent){
-        return new BinaryContentResponse(
-            binaryContent.getId(),
-            binaryContent.getFileName(),
-            binaryContent.getContentType(),
-            binaryContent.getData(),
-            binaryContent.getUserId(),
-            binaryContent.getMessageId()
-        );
     }
 }
