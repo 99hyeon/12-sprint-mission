@@ -1,17 +1,15 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 
 @Getter
-public class User extends BaseEntity {
+public class User extends UpdatableBaseEntity {
 
     private String email;
     private String userName;
     private String password;
     private UUID profileImageId;
-    private Instant updatedAt;
 
     public User(String email, String userName, String password, UUID profileImageId) {
         super();
@@ -19,7 +17,6 @@ public class User extends BaseEntity {
         this.userName = userName;
         this.password = password;
         this.profileImageId = profileImageId;
-        this.updatedAt = Instant.now();
     }
 
     public void updateEmail(String email) {
@@ -37,7 +34,7 @@ public class User extends BaseEntity {
         updateUpdatedAt();
     }
 
-    public void changeProfile(String email, String userName, UUID profileImageId){
+    public void changeProfile(String email, String userName, UUID profileImageId) {
         if (email != null) {
             this.email = email;
         }
@@ -58,7 +55,4 @@ public class User extends BaseEntity {
         updateUpdatedAt();
     }
 
-    private void updateUpdatedAt() {
-        this.updatedAt = Instant.now();
-    }
 }

@@ -5,19 +5,17 @@ import java.util.UUID;
 import lombok.Getter;
 
 @Getter
-public class ReadStatus extends BaseEntity {
+public class ReadStatus extends UpdatableBaseEntity {
 
     private UUID userId;
     private UUID channelId;
     private Instant lastReadAt;
-    private Instant updatedAt;
 
     public ReadStatus(UUID userId, UUID channelId, Instant lastReadAt) {
         super();
         this.userId = userId;
         this.channelId = channelId;
         this.lastReadAt = lastReadAt;
-        this.updatedAt = Instant.now();
     }
 
     public void changeLastReadAt(Instant lastReadAt) {
@@ -31,7 +29,4 @@ public class ReadStatus extends BaseEntity {
         updateUpdatedAt();
     }
 
-    private void updateUpdatedAt() {
-        this.updatedAt = Instant.now();
-    }
 }

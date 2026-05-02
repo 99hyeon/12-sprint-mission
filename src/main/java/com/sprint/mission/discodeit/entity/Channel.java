@@ -1,19 +1,17 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import java.util.UUID;
 
 @Getter
-public class Channel extends BaseEntity {
+public class Channel extends UpdatableBaseEntity {
 
     private String name;
     private ChannelType type;
     private String description;
     private List<UUID> messages;
-    private Instant updatedAt;
 
     private Channel(String name, ChannelType type, String description) {
         super();
@@ -21,7 +19,6 @@ public class Channel extends BaseEntity {
         this.type = type;
         this.description = description;
         this.messages = new ArrayList<>();
-        this.updatedAt = Instant.now();
     }
 
     public static Channel createPublic(String name, String description) {
@@ -62,7 +59,4 @@ public class Channel extends BaseEntity {
         updateUpdatedAt();
     }
 
-    private void updateUpdatedAt() {
-        this.updatedAt = Instant.now();
-    }
 }
