@@ -18,7 +18,7 @@ public record ChannelFindResponse(
 
     public static ChannelFindResponse from(Channel channel, Message recentMessage,
         List<UUID> participantIds) {
-        Instant lastMessageAt = recentMessage == null ? null : recentMessage.getUpdatedAt();
+        Instant lastMessageAt = recentMessage == null ? null : recentMessage.getCreatedAt();
 
         return new ChannelFindResponse(
             channel.getId(),

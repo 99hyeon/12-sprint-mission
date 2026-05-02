@@ -32,7 +32,8 @@ public class BasicReadStatusService implements ReadStatusService {
         Channel channel = getChannelOrThrow(request.channelId());
         if (channel.getType() == ChannelType.PRIVATE) {
             throw new BadRequestException(
-                ErrorCode.READSTATUS_ALREADY_EXIST.format(request.userId(), request.channelId()));
+                ErrorCode.PRIVATE_CHANNEL_READ_STATUS_FORBIDDEN.format(request.userId(),
+                    request.channelId()));
         }
         validateReadStatusNotExists(request.userId(), request.channelId());
 

@@ -102,7 +102,9 @@ public class BasicChannelService implements ChannelService {
         }
 
         channel.changeChannel(request.newName(), request.newDescription());
-        return ChannelResponse.from(channel);
+        Channel updatedChannel = channelRepository.save(channel);
+
+        return ChannelResponse.from(updatedChannel);
     }
 
     @Override
