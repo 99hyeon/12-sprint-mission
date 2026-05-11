@@ -10,9 +10,14 @@ import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
-    UserResponse create(UserCreateRequest request, MultipartFile profileImg);
+
+    UserResponse create(UserCreateRequest request, MultipartFile profile);
+
     UserResponse find(UUID id);
+
     List<UserDto> findAll();
-    UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profileImg);
+
+    UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profile);
+
     void delete(UUID id);
 }

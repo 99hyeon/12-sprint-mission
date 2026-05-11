@@ -5,5 +5,7 @@ import java.util.UUID;
 public record MessageCreateRequest(
     String content,
     UUID channelId,
-    UUID userId
-) {}
+    UUID authorId
+) {
+
+}

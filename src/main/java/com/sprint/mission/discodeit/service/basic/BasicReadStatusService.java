@@ -31,13 +31,16 @@ public class BasicReadStatusService implements ReadStatusService {
         validateUserExists(request.userId());
         Channel channel = getChannelOrThrow(request.channelId());
         if (channel.getType() == ChannelType.PRIVATE) {
-            throw new BadRequestException(ErrorCode.READSTATUS_ALREADY_EXIST.format(request.userId(), request.channelId()));
+            throw new BadRequestException(
+                ErrorCode.PRIVATE_CHANNEL_READ_STATUS_FORBIDDEN.format(request.userId(),
+                    request.channelId()));
         }
         validateReadStatusNotExists(request.userId(), request.channelId());
 
         ReadStatus readStatus = new ReadStatus(
             request.userId(),
-            request.channelId()
+            request.channelId(),
+            request.lastReadAt()
         );
 
         ReadStatus savedReadStatus = readStatusRepository.save(readStatus);
@@ -65,10 +68,7 @@ public class BasicReadStatusService implements ReadStatusService {
     public ReadStatusResponse update(UUID userStatusId, ReadStatusUpdateRequest request) {
         ReadStatus readStatus = getReadStatusOrThrow(userStatusId);
 
-        validateUserExists(request.userId());
-        validateChannelExists(request.channelId());
-
-        readStatus.changeReadStatus(request.userId(), request.channelId(), request.lastReadAt());
+        readStatus.changeReadStatus(request.newLastReadAt());
         ReadStatus changedReadStatus = readStatusRepository.save(readStatus);
         return ReadStatusResponse.from(changedReadStatus);
     }
@@ -97,16 +97,11 @@ public class BasicReadStatusService implements ReadStatusService {
         );
     }
 
-    private void validateChannelExists(UUID channelId) {
-        channelRepository.findById(channelId).orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
-        );
-    }
-
     private void validateReadStatusNotExists(UUID userId, UUID channelId) {
         readStatusRepository.findByUserIdAndChannelId(userId, channelId)
             .ifPresent(readStatus -> {
-                throw new BadRequestException(ErrorCode.READSTATUS_ALREADY_EXIST.format(userId, channelId));
+                throw new BadRequestException(
+                    ErrorCode.READSTATUS_ALREADY_EXIST.format(userId, channelId));
             });
     }
 }
