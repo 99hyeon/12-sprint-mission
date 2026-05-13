@@ -31,21 +31,21 @@ public class BasicMessageService implements MessageService {
     private final UserRepository userRepository;
 
     @Override
-    public MessageResponse create(MessageCreateRequest request, List<MultipartFile> attachments) {
-        validateUserExists(request.authorId());
+    public MessageResponse create(MessageCreateRequest request, List<MultipartFile> files) {
+        validateUserExists(request.userId());
         validateChannelExists(request.channelId());
 
         Message message = new Message(
             request.content(),
             request.channelId(),
-            request.authorId()
+            request.userId()
         );
         messageRepository.save(message);
 
         List<BinaryContent> binaryContents = new ArrayList<>();
-        if (attachments != null) {
-            for (MultipartFile file : attachments) {
-                try {
+        if(files != null){
+            for(MultipartFile file : files){
+                try{
                     BinaryContent binaryContent = new BinaryContent(
                         file.getOriginalFilename(),
                         file.getContentType(),
@@ -55,9 +55,8 @@ public class BasicMessageService implements MessageService {
                     );
                     binaryContents.add(binaryContent);
 
-                } catch (IOException e) {
-                    throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
-                        e);
+                } catch (IOException e){
+                    throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
                 }
             }
         }
@@ -94,7 +93,7 @@ public class BasicMessageService implements MessageService {
         validateUserExists(message.getUserId());
         validateChannelExists(message.getChannelId());
 
-        message.changeContent(request.newContent());
+        message.changeContent(request.content());
         message = messageRepository.save(message);
         List<BinaryContent> files = binaryContentRepository.findByMessageId(messageId);
 
@@ -111,8 +110,7 @@ public class BasicMessageService implements MessageService {
 
     private Message getMessageOrThrow(UUID messageId) {
         return messageRepository.findById(messageId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId)));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId)));
     }
 
     private void validateUserExists(UUID userId) {

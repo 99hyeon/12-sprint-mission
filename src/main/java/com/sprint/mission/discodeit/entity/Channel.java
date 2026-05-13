@@ -1,32 +1,37 @@
 package com.sprint.mission.discodeit.entity;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import java.util.UUID;
 
 @Getter
-public class Channel extends UpdatableBaseEntity {
+public class Channel extends BaseEntity {
 
     private String name;
     private ChannelType type;
-    private String description;
+    private String notiTitle;
+    private String notiContents;
     private List<UUID> messages;
+    private Instant updatedAt;
 
-    private Channel(String name, ChannelType type, String description) {
+    private Channel(String name, ChannelType type, String notiTitle, String notiContents) {
         super();
         this.name = name;
         this.type = type;
-        this.description = description;
+        this.notiTitle = notiTitle;
+        this.notiContents = notiContents;
         this.messages = new ArrayList<>();
+        this.updatedAt = Instant.now();
     }
 
-    public static Channel createPublic(String name, String description) {
-        return new Channel(name, ChannelType.PUBLIC, description);
+    public static Channel createPublic(String name, String notiTitle, String notiContents) {
+        return new Channel(name, ChannelType.PUBLIC, notiTitle, notiContents);
     }
 
     public static Channel createPrivate(String name) {
-        return new Channel(name, ChannelType.PRIVATE, null);
+        return new Channel(name, ChannelType.PRIVATE, null, null);
     }
 
     public void updateName(String name) {
@@ -39,8 +44,13 @@ public class Channel extends UpdatableBaseEntity {
         updateUpdatedAt();
     }
 
-    public void updateDescription(String description) {
-        this.description = description;
+    public void updateNotiTitle(String notiTitle) {
+        this.notiTitle = notiTitle;
+        updateUpdatedAt();
+    }
+
+    public void updateNotiContents(String notiContents) {
+        this.notiContents = notiContents;
         updateUpdatedAt();
     }
 
@@ -49,14 +59,20 @@ public class Channel extends UpdatableBaseEntity {
         updateUpdatedAt();
     }
 
-    public void changeChannel(String name, String description) {
-        if (name != null) {
+    public void changeChannel(String name, String notiTitle, String notiContents){
+        if(name != null){
             this.name = name;
         }
-        if (description != null) {
-            this.description = description;
+        if(notiTitle != null){
+            this.notiTitle = notiTitle;
+        }
+        if(notiContents != null){
+            this.notiContents = notiContents;
         }
         updateUpdatedAt();
     }
 
+    private void updateUpdatedAt() {
+        this.updatedAt = Instant.now();
+    }
 }

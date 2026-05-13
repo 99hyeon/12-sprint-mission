@@ -37,7 +37,8 @@ public class BasicChannelService implements ChannelService {
     public ChannelResponse createPublic(ChannelPublicCreateRequest request) {
         Channel channel = Channel.createPublic(
             request.name(),
-            request.description()
+            request.notiTitle(),
+            request.notiContents()
         );
 
         return ChannelResponse.from(channelRepository.save(channel));
@@ -47,13 +48,12 @@ public class BasicChannelService implements ChannelService {
     public ChannelResponse createPrivate(ChannelPrivateCreateRequest request) {
         Channel channel = Channel.createPrivate(request.name());
 
-        for (UUID userId : request.participantIds()) {
+        for (UUID userId : request.memberUserIds()) {
             User user = getUserOrThrow(userId);
 
             ReadStatus readStatus = new ReadStatus(
                 user.getId(),
-                channel.getId(),
-                null
+                channel.getId()
             );
             readStatusRepository.save(readStatus);
         }
@@ -101,10 +101,8 @@ public class BasicChannelService implements ChannelService {
             throw new BadRequestException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE.getMessage());
         }
 
-        channel.changeChannel(request.newName(), request.newDescription());
-        Channel updatedChannel = channelRepository.save(channel);
-
-        return ChannelResponse.from(updatedChannel);
+        channel.changeChannel(request.name(), request.notiTitle(), request.notiContents());
+        return ChannelResponse.from(channel);
     }
 
     @Override
@@ -118,14 +116,12 @@ public class BasicChannelService implements ChannelService {
 
     private Channel getChannelOrThrow(UUID channelId) {
         return channelRepository.findById(channelId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId)));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId)));
     }
 
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
     }
 
     private boolean availableAccessChannel(Channel channel, UUID userId) {
@@ -134,8 +130,7 @@ public class BasicChannelService implements ChannelService {
         }
 
         if (channel.getType() == ChannelType.PRIVATE) {
-            return readStatusRepository.findByUserIdAndChannelId(userId, channel.getId())
-                .isPresent();
+            return readStatusRepository.findByUserIdAndChannelId(userId, channel.getId()).isPresent();
         }
 
         return false;

@@ -40,8 +40,10 @@ public class BasicBinaryContentService implements BinaryContentService {
     }
 
     @Override
-    public BinaryContentResponse find(UUID id) {
-        return BinaryContentResponse.from(getBinaryContentOrThrow(id));
+    public BinaryContent find(UUID id) {
+        BinaryContent binaryContent = getBinaryContentOrThrow(id);
+
+        return binaryContent;
     }
 
     @Override
@@ -71,8 +73,7 @@ public class BasicBinaryContentService implements BinaryContentService {
 
     private void validateOwnerExists(UUID userId, UUID messageId) {
         if (userId == null && messageId == null) {
-            throw new BadRequestException(
-                ErrorCode.USER_ID_AND_MESSAGE_ID_MUST_NOT_BE_NULL.getMessage());
+            throw new BadRequestException(ErrorCode.USER_ID_AND_MESSAGE_ID_MUST_NOT_BE_NULL.getMessage());
         }
 
         if (userId != null) {

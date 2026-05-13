@@ -31,7 +31,7 @@ public class BasicUserService implements UserService {
     private final BinaryContentRepository binaryContentRepository;
 
     @Override
-    public UserResponse create(UserCreateRequest request, MultipartFile profile) {
+    public UserResponse create(UserCreateRequest request, MultipartFile profileImg) {
         validateDuplicateUser(request);
 
         User user = new User(
@@ -41,8 +41,8 @@ public class BasicUserService implements UserService {
             null
         );
 
-        if (profile != null) {
-            UUID profileImageId = saveProfileImage(user, profile);
+        if (profileImg != null) {
+            UUID profileImageId = saveProfileImage(user, profileImg);
             user.updateProfileImageId(profileImageId);
         }
 
@@ -68,23 +68,23 @@ public class BasicUserService implements UserService {
     }
 
     @Override
-    public UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profile) {
+    public UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profileImg) {
         User user = getUserOrThrow(userId);
 
         validateDuplicateForUpdate(userId, request);
 
         UUID profileImageId = user.getProfileImageId();
-        if (profile != null) {
+        if (profileImg != null) {
             if (profileImageId != null) {
                 binaryContentRepository.delete(profileImageId);
             }
 
-            profileImageId = saveProfileImage(user, profile);
+            profileImageId = saveProfileImage(user, profileImg);
         }
 
         user.changeProfile(
-            request.newEmail(),
-            request.newUsername(),
+            request.email(),
+            request.username(),
             profileImageId
         );
         userRepository.save(user);
@@ -114,8 +114,7 @@ public class BasicUserService implements UserService {
 
     private UserStatus getUserStatusOrThrow(UUID userId) {
         return userStatusRepository.findByUserId(userId).orElseThrow(
-            () -> new ResourceNotFoundException(
-                ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
+            () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
         );
     }
 
@@ -127,23 +126,21 @@ public class BasicUserService implements UserService {
     }
 
     private void validateDuplicateForUpdate(UUID userId, UserUpdateRequest request) {
-        userRepository.findByEmail(request.newEmail())
+        userRepository.findByEmail(request.email())
             .filter(found -> !found.getId().equals(userId))
             .ifPresent(found -> {
-                throw new BadRequestException(
-                    ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
+                throw new BadRequestException(ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
             });
 
-        userRepository.findByUserName(request.newUsername())
+        userRepository.findByUserName(request.username())
             .filter(found -> !found.getId().equals(userId))
             .ifPresent(found -> {
-                throw new BadRequestException(
-                    ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUserName()));
+                throw new BadRequestException(ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUserName()));
             });
     }
 
     private UUID saveProfileImage(User user, MultipartFile profileImg) {
-        try {
+        try{
             BinaryContent profileImage = new BinaryContent(
                 profileImg.getOriginalFilename(),
                 profileImg.getContentType(),
@@ -153,7 +150,7 @@ public class BasicUserService implements UserService {
             );
             BinaryContent savedBinaryContent = binaryContentRepository.save(profileImage);
             return savedBinaryContent.getId();
-        } catch (IOException e) {
+        } catch (IOException e){
             throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
         }
     }

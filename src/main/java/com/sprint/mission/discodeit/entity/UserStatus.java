@@ -6,23 +6,28 @@ import java.util.UUID;
 import lombok.Getter;
 
 @Getter
-public class UserStatus extends UpdatableBaseEntity {
+public class UserStatus extends BaseEntity {
 
     private static final long ONLINE_THRESHOLD_MINUTES = 5;
 
     private UUID userId;
+    private Instant updatedAt;
 
-    public UserStatus(UUID userId) {
+    public UserStatus(UUID userId){
         super();
         this.userId = userId;
+        this.updatedAt = Instant.now();
     }
 
-    public boolean isOnline() {
-        return Duration.between(this.updatedAt, Instant.now()).toMinutes()
-            < ONLINE_THRESHOLD_MINUTES;
+    public boolean isOnline(){
+        return Duration.between(this.updatedAt, Instant.now()).toMinutes() < ONLINE_THRESHOLD_MINUTES;
     }
 
-    public void updateUpdatedAt(Instant newLastActiveAt) {
+    public void updateUpdatedAt(Instant newLastActiveAt){
         this.updatedAt = newLastActiveAt;
+    }
+
+    public void updateUpdatedAt() {
+        this.updatedAt = Instant.now();
     }
 }

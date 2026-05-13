@@ -9,24 +9,20 @@ import java.util.UUID;
 
 public record ChannelFindResponse(
     UUID id,
-    ChannelType type,
     String name,
-    String description,
-    List<UUID> participantIds,
-    Instant lastMessageAt
+    ChannelType type,
+    Instant recentMessageCreatedAt,
+    List<UUID> userIds
 ) {
-
-    public static ChannelFindResponse from(Channel channel, Message recentMessage,
-        List<UUID> participantIds) {
-        Instant lastMessageAt = recentMessage == null ? null : recentMessage.getCreatedAt();
+    public static ChannelFindResponse from(Channel channel, Message recentMessage, List<UUID> userIds){
+        Instant messageCreatedAt = recentMessage == null ? null : recentMessage.getUpdatedAt();
 
         return new ChannelFindResponse(
             channel.getId(),
-            channel.getType(),
             channel.getName(),
-            channel.getDescription(),
-            participantIds,
-            lastMessageAt
+            channel.getType(),
+            messageCreatedAt,
+            userIds
         );
     }
 }

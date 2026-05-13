@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.controller;
 
-import com.sprint.mission.discodeit.controller.api.UserApi;
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserResponse;
@@ -25,45 +24,39 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
-public class UserController implements UserApi {
+public class UserController {
 
     private final UserService userService;
     private final UserStatusService userStatusService;
 
-    @Override
     @RequestMapping(value = "/api/users", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserResponse> createUser(
         @RequestPart("userCreateRequest") UserCreateRequest request,
-        @RequestPart(value = "profile", required = false) MultipartFile profile
+        @RequestPart(value = "profileImg", required = false) MultipartFile profileImg
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(userService.create(request, profile));
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request, profileImg));
     }
 
-    @Override
     @RequestMapping(value = "/api/users/{userId}", method = RequestMethod.PATCH, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserResponse> updateUser(
         @PathVariable("userId") UUID userId,
         @RequestPart("userUpdateRequest") UserUpdateRequest request,
-        @RequestPart(value = "profile", required = false) MultipartFile profile
-    ) {
-        return ResponseEntity.ok(userService.update(userId, request, profile));
+        @RequestPart(value = "profileImg", required = false) MultipartFile profileImg
+        ) {
+        return ResponseEntity.ok(userService.update(userId, request, profileImg));
     }
 
-    @Override
     @RequestMapping(value = "/api/users/{userId}", method = RequestMethod.DELETE)
     public ResponseEntity<Void> deleteUser(@PathVariable("userId") UUID userId) {
         userService.delete(userId);
         return ResponseEntity.noContent().build();
     }
 
-    @Override
-    @RequestMapping(value = "/api/users", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/user/findAll", method = RequestMethod.GET)
     public ResponseEntity<List<UserDto>> findAll() {
         return ResponseEntity.ok(userService.findAll());
     }
 
-    @Override
     @RequestMapping(value = "/api/users/{userId}/userStatus", method = RequestMethod.PATCH)
     public ResponseEntity<UserStatusResponse> updateUserStatus(@PathVariable("userId") UUID userId,
         @RequestBody UserStatusUpdateRequest request) {

@@ -32,14 +32,14 @@ public class BasicUserStatusService implements UserStatusService {
         );
         UserStatus savedUserStatus = userStatusRepository.save(userStatus);
 
-        return UserStatusResponse.from(savedUserStatus);
+        return dtoFrom(savedUserStatus);
     }
 
     @Override
     public UserStatusResponse find(UUID id) {
         UserStatus userStatus = getUserStatusOrThrow(id);
 
-        return UserStatusResponse.from(userStatus);
+        return dtoFrom(userStatus);
     }
 
     @Override
@@ -47,8 +47,18 @@ public class BasicUserStatusService implements UserStatusService {
         List<UserStatus> userStatuses = userStatusRepository.findAll();
 
         return userStatuses.stream()
-            .map(UserStatusResponse::from)
+            .map(this::dtoFrom)
             .toList();
+    }
+
+    @Override
+    public UserStatusResponse update(UserStatusUpdateRequest request) {
+        UserStatus userStatus = getUserStatusOrThrow(request.id());
+
+        userStatus.updateUpdatedAt();
+        UserStatus updatedUserStatus = userStatusRepository.save(userStatus);
+
+        return dtoFrom(updatedUserStatus);
     }
 
     @Override
@@ -58,7 +68,7 @@ public class BasicUserStatusService implements UserStatusService {
         userStatus.updateUpdatedAt(request.newLastActiveAt());
         UserStatus updatedUserStatus = userStatusRepository.save(userStatus);
 
-        return UserStatusResponse.from(updatedUserStatus);
+        return dtoFrom(updatedUserStatus);
     }
 
     @Override
@@ -75,8 +85,7 @@ public class BasicUserStatusService implements UserStatusService {
 
     private UserStatus getUserStatusByUserIdOrThrow(UUID userId) {
         return userStatusRepository.findByUserId(userId).orElseThrow(
-            () -> new ResourceNotFoundException(
-                ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
+            () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
         );
     }
 
@@ -92,4 +101,11 @@ public class BasicUserStatusService implements UserStatusService {
         });
     }
 
+    private UserStatusResponse dtoFrom(UserStatus userStatus){
+        return new UserStatusResponse(
+            userStatus.getId(),
+            userStatus.getUserId(),
+            userStatus.isOnline()
+        );
+    }
 }

@@ -8,13 +8,12 @@ public record UserResponse(
     UUID id,
     Instant createdAt,
     Instant updatedAt,
-    String username,
+    String userName,
     String email,
     String password,
-    UUID profileId
+    UUID profileImageId
 ) {
-
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user){
         return new UserResponse(
             user.getId(),
             user.getCreatedAt(),

@@ -15,8 +15,6 @@ public enum ErrorCode {
 
     CHANNEL_NOT_FOUND("Channel with id %s not found"),
     PRIVATE_CHANNEL_CANNOT_UPDATE("Private channel cannot be updated"),
-    PRIVATE_CHANNEL_READ_STATUS_FORBIDDEN(
-        "Private channel ReadStatus can only be created internally"),
 
     MESSAGE_NOT_FOUND("Message with id %s not found"),
 
@@ -31,7 +29,6 @@ public enum ErrorCode {
     FILE_PROCESSING_ERROR("파일 처리 중 오류 발생");
 
     private final String message;
-
     ErrorCode(String message) {
         this.message = message;
     }
