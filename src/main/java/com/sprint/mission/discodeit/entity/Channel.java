@@ -1,24 +1,33 @@
 package com.sprint.mission.discodeit.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
-import java.util.UUID;
+import lombok.NoArgsConstructor;
 
 @Getter
+@Entity
+@Table(name = "channels")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Channel extends UpdatableBaseEntity {
 
+    @Column(length = 100)
     private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
     private ChannelType type;
+    @Column(length = 500)
     private String description;
-    private List<UUID> messages;
 
     private Channel(String name, ChannelType type, String description) {
         super();
         this.name = name;
         this.type = type;
         this.description = description;
-        this.messages = new ArrayList<>();
     }
 
     public static Channel createPublic(String name, String description) {
@@ -31,22 +40,14 @@ public class Channel extends UpdatableBaseEntity {
 
     public void updateName(String name) {
         this.name = name;
-        updateUpdatedAt();
     }
 
     public void updateChannelType(ChannelType type) {
         this.type = type;
-        updateUpdatedAt();
     }
 
     public void updateDescription(String description) {
         this.description = description;
-        updateUpdatedAt();
-    }
-
-    public void addMessage(UUID messageId) {
-        this.messages.add(messageId);
-        updateUpdatedAt();
     }
 
     public void changeChannel(String name, String description) {
@@ -56,7 +57,6 @@ public class Channel extends UpdatableBaseEntity {
         if (description != null) {
             this.description = description;
         }
-        updateUpdatedAt();
     }
 
 }

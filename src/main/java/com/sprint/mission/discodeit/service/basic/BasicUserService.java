@@ -1,7 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.user.UserCreateRequest;
-import com.sprint.mission.discodeit.dto.user.UserDto;
 import com.sprint.mission.discodeit.dto.user.UserResponse;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
@@ -15,6 +14,7 @@ import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -26,135 +26,133 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
 
-    private final UserRepository userRepository;
-    private final UserStatusRepository userStatusRepository;
-    private final BinaryContentRepository binaryContentRepository;
+  private final UserRepository userRepository;
+  private final UserStatusRepository userStatusRepository;
+  private final BinaryContentRepository binaryContentRepository;
+  private final BinaryContentStorage binaryContentStorage;
 
-    @Override
-    public UserResponse create(UserCreateRequest request, MultipartFile profile) {
-        validateDuplicateUser(request);
+  @Override
+  public UserResponse create(UserCreateRequest request, MultipartFile profile) {
+    validateDuplicateUser(request);
 
-        User user = new User(
-            request.email(),
-            request.username(),
-            request.password(),
-            null
-        );
-
-        if (profile != null) {
-            UUID profileImageId = saveProfileImage(user, profile);
-            user.updateProfileImageId(profileImageId);
-        }
-
-        UserStatus userStatus = new UserStatus(user.getId());
-        userStatusRepository.save(userStatus);
-
-        User savedUser = userRepository.save(user);
-        return UserResponse.from(savedUser);
+    BinaryContent binaryContent = null;
+    if (profile != null) {
+      binaryContent = saveProfileImage(profile);
     }
 
-    @Override
-    public UserResponse find(UUID id) {
-        User user = getUserOrThrow(id);
+    User user = new User(
+        request.email(),
+        request.username(),
+        request.password(),
+        binaryContent
+    );
+    user.initStatus();
+    User savedUser = userRepository.save(user);
 
-        return UserResponse.from(user);
+    return UserResponse.from(savedUser);
+  }
+
+  @Override
+  public List<UserResponse> findAll() {
+    return userRepository.findAll().stream()
+        .map(user -> UserResponse.from(user))
+        .toList();
+  }
+
+  @Override
+  public UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profile) {
+    User user = getUserOrThrow(userId);
+    validateDuplicateForUpdate(userId, request);
+
+    UUID profileImageId = user.getProfile().getId();
+    BinaryContent binaryContent = null;
+    if (profile != null) {
+      if (profileImageId != null) {
+        binaryContentRepository.deleteById(profileImageId);
+      }
+
+      binaryContent = saveProfileImage(profile);
     }
 
-    @Override
-    public List<UserDto> findAll() {
-        return userRepository.findAll().stream()
-            .map(user -> UserDto.from(user, getUserStatusOrThrow(user.getId())))
-            .toList();
+    user.changeProfile(
+        request.newEmail(),
+        request.newUsername(),
+        binaryContent
+    );
+    userRepository.save(user);
+    UserStatus userStatus = getUserStatusOrThrow(user.getId());
+
+    return UserResponse.from(user);
+  }
+
+  @Override
+  public void delete(UUID id) {
+    User user = getUserOrThrow(id);
+
+    if (user.getProfile().getId() != null) {
+      binaryContentRepository.deleteById(user.getProfile().getId());
     }
 
-    @Override
-    public UserResponse update(UUID userId, UserUpdateRequest request, MultipartFile profile) {
-        User user = getUserOrThrow(userId);
+    userStatusRepository.findByUserId(user.getId())
+        .ifPresent(userStatus -> userStatusRepository.deleteById(userStatus.getId()));
 
-        validateDuplicateForUpdate(userId, request);
+    userRepository.deleteById(id);
+  }
 
-        UUID profileImageId = user.getProfileImageId();
-        if (profile != null) {
-            if (profileImageId != null) {
-                binaryContentRepository.delete(profileImageId);
-            }
+  private User getUserOrThrow(UUID userId) {
+    return userRepository.findById(userId).orElseThrow(
+        () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
+    );
+  }
 
-            profileImageId = saveProfileImage(user, profile);
-        }
+  private UserStatus getUserStatusOrThrow(UUID userId) {
+    return userStatusRepository.findByUserId(userId).orElseThrow(
+        () -> new ResourceNotFoundException(
+            ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
+    );
+  }
 
-        user.changeProfile(
-            request.newEmail(),
-            request.newUsername(),
-            profileImageId
-        );
-        userRepository.save(user);
-
-        return UserResponse.from(user);
+  private void validateDuplicateUser(UserCreateRequest request) {
+    if (userRepository.findByUsername(request.username()).isPresent()
+        || userRepository.findByEmail(request.email()).isPresent()) {
+      throw new BadRequestException(ErrorCode.USER_DUPLICATE.getMessage());
     }
+  }
 
-    @Override
-    public void delete(UUID id) {
-        User user = getUserOrThrow(id);
+  private void validateDuplicateForUpdate(UUID userId, UserUpdateRequest request) {
+    userRepository.findByEmail(request.newEmail())
+        .filter(found -> !found.getId().equals(userId))
+        .ifPresent(found -> {
+          throw new BadRequestException(
+              ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
+        });
 
-        if (user.getProfileImageId() != null) {
-            binaryContentRepository.delete(user.getProfileImageId());
-        }
+    userRepository.findByUsername(request.newUsername())
+        .filter(found -> !found.getId().equals(userId))
+        .ifPresent(found -> {
+          throw new BadRequestException(
+              ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUsername()));
+        });
+  }
 
-        userStatusRepository.findByUserId(user.getId())
-            .ifPresent(userStatus -> userStatusRepository.delete(userStatus.getId()));
+  private BinaryContent saveProfileImage(MultipartFile profile) {
+    try {
+      BinaryContent binaryContent = new BinaryContent(
+          profile.getOriginalFilename(),
+          profile.getContentType(),
+          profile.getSize()
+      );
 
-        userRepository.delete(id);
+      BinaryContent savedBinaryContent = binaryContentRepository.save(binaryContent);
+
+      binaryContentStorage.put(
+          savedBinaryContent.getId(),
+          profile.getBytes()
+      );
+
+      return savedBinaryContent;
+    } catch (IOException e) {
+      throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
     }
-
-    private User getUserOrThrow(UUID userId) {
-        return userRepository.findById(userId).orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
-        );
-    }
-
-    private UserStatus getUserStatusOrThrow(UUID userId) {
-        return userStatusRepository.findByUserId(userId).orElseThrow(
-            () -> new ResourceNotFoundException(
-                ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
-        );
-    }
-
-    private void validateDuplicateUser(UserCreateRequest request) {
-        if (userRepository.findByUserName(request.username()).isPresent()
-            || userRepository.findByEmail(request.email()).isPresent()) {
-            throw new BadRequestException(ErrorCode.USER_DUPLICATE.getMessage());
-        }
-    }
-
-    private void validateDuplicateForUpdate(UUID userId, UserUpdateRequest request) {
-        userRepository.findByEmail(request.newEmail())
-            .filter(found -> !found.getId().equals(userId))
-            .ifPresent(found -> {
-                throw new BadRequestException(
-                    ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
-            });
-
-        userRepository.findByUserName(request.newUsername())
-            .filter(found -> !found.getId().equals(userId))
-            .ifPresent(found -> {
-                throw new BadRequestException(
-                    ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUserName()));
-            });
-    }
-
-    private UUID saveProfileImage(User user, MultipartFile profileImg) {
-        try {
-            BinaryContent profileImage = new BinaryContent(
-                profileImg.getOriginalFilename(),
-                profileImg.getContentType(),
-                profileImg.getBytes(),
-                user.getId(),
-                null
-            );
-            BinaryContent savedBinaryContent = binaryContentRepository.save(profileImage);
-            return savedBinaryContent.getId();
-        } catch (IOException e) {
-            throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
-        }
-    }
+  }
 }

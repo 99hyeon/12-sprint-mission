@@ -1,0 +1,104 @@
+package com.sprint.mission.discodeit.storage;
+
+import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
+import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConditionalOnProperty(
+    prefix = "discodeit.storage",
+    name = "type",
+    havingValue = "local"
+)
+public class LocalBinaryContentStorage implements BinaryContentStorage {
+
+    private final Path root;
+
+    public LocalBinaryContentStorage(
+        @Value("${discodeit.storage.local.root-path}") String rootPath
+    ) {
+        this.root = Path.of(rootPath);
+    }
+
+    @PostConstruct
+    public void init() {
+        try {
+            Files.createDirectories(root);
+        } catch (IOException e) {
+            throw new FileProcessingException(
+                ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+                e
+            );
+        }
+    }
+
+    @Override
+    public UUID put(UUID id, byte[] bytes) {
+        try {
+            Path path = resolvePath(id);
+            Files.write(path, bytes);
+            return id;
+        } catch (IOException e) {
+            throw new FileProcessingException(
+                ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+                e
+            );
+        }
+    }
+
+    @Override
+    public InputStream get(UUID id) {
+        try {
+            Path path = resolvePath(id);
+            return Files.newInputStream(path);
+        } catch (IOException e) {
+            throw new FileProcessingException(
+                ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+                e
+            );
+        }
+    }
+
+    @Override
+    public ResponseEntity<Resource> download(BinaryContentResponse binaryContent) {
+        InputStream inputStream = get(binaryContent.id());
+
+        InputStreamResource resource = new InputStreamResource(inputStream);
+
+        String encodedFileName = URLEncoder.encode(
+            binaryContent.fileName(),
+            StandardCharsets.UTF_8
+        ).replaceAll("\\+", "%20");
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+            .filename(encodedFileName, StandardCharsets.UTF_8)
+            .build();
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(binaryContent.contentType()))
+            .contentLength(binaryContent.size())
+            .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+            .body(resource);
+    }
+
+    private Path resolvePath(UUID id) {
+        return root.resolve(id.toString());
+    }
+}

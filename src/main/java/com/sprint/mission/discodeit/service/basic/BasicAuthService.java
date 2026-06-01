@@ -1,7 +1,7 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.auth.LoginRequest;
-import com.sprint.mission.discodeit.dto.auth.LoginResponse;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.exception.ErrorCode;
 import com.sprint.mission.discodeit.exception.custom.BadRequestException;
@@ -14,18 +14,19 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class BasicAuthService implements AuthService {
-    private final UserRepository userRepository;
 
-    @Override
-    public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.USER_EMAIL_NOT_FOUND.format(request.email()))
-        );
+  private final UserRepository userRepository;
 
-        if(!user.getPassword().equals(request.password())){
-            throw new BadRequestException(ErrorCode.WRONG_PASSWORD.getMessage());
-        }
-
-        return LoginResponse.from(user);
+  @Override
+  public UserResponse login(LoginRequest request) {
+    User user = userRepository.findByEmail(request.email()).orElseThrow(
+        () -> new ResourceNotFoundException(
+            ErrorCode.USER_EMAIL_NOT_FOUND.format(request.email()))
+    );
+    if (!user.getPassword().equals(request.password())) {
+      throw new BadRequestException(ErrorCode.WRONG_PASSWORD.getMessage());
     }
+
+    return UserResponse.from(user);
+  }
 }
