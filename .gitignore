@@ -58,3 +58,4 @@ bin/
 $RECYCLE.BIN/
 
 data
+.logs
