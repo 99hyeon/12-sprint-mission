@@ -3,8 +3,7 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
 import com.sprint.mission.discodeit.entity.BinaryContent;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
+import com.sprint.mission.discodeit.exception.binarycontent.BinaryContentNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
@@ -73,7 +72,7 @@ public class BasicBinaryContentService implements BinaryContentService {
   private BinaryContent getBinaryContentOrThrow(UUID id) {
     return binaryContentRepository.findById(id).orElseThrow(() -> {
       log.warn("파일 조회 실패 - 파일 메타데이터를 찾을 수 없음. binaryContentId={}", id);
-      return new ResourceNotFoundException(ErrorCode.BINARYCONTENT_NOT_FOUND.format(id));
+      return new BinaryContentNotFoundException(id);
     });
   }
 

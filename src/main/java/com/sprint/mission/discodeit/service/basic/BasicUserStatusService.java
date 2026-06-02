@@ -5,13 +5,12 @@ import com.sprint.mission.discodeit.dto.userstatus.UserStatusResponse;
 import com.sprint.mission.discodeit.dto.userstatus.UserStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.BadRequestException;
-import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.exception.userstatus.UserStatusDuplicateException;
+import com.sprint.mission.discodeit.exception.userstatus.UserStatusNotFound;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserStatusService;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,26 +51,25 @@ public class BasicUserStatusService implements UserStatusService {
 
   private UserStatus getUserStatusOrThrow(UUID id) {
     return userStatusRepository.findById(id).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.USERSTATUS_NOT_FOUND.format(id))
+        () -> new UserStatusNotFound(id)
     );
   }
 
   private UserStatus getUserStatusByUserIdOrThrow(UUID userId) {
     return userStatusRepository.findByUserId(userId).orElseThrow(
-        () -> new ResourceNotFoundException(
-            ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
+        () -> UserStatusNotFound.withUserId(userId)
     );
   }
 
   private User getUserOrThrow(UUID userId) {
     return userRepository.findById(userId).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
+        () -> new UserNotFoundException(userId)
     );
   }
 
   private void validateUserStatusNotExists(UUID userId) {
     userStatusRepository.findByUserId(userId).ifPresent(userStatus -> {
-      throw new BadRequestException(ErrorCode.USERSTATUS_ALREADY_EXIST.format(userId));
+      throw UserStatusDuplicateException.withUserId(userId);
     });
   }
 

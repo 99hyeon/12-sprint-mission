@@ -10,9 +10,9 @@ import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.BadRequestException;
-import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.channel.PrivateChannelCannotUpdateException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
@@ -104,7 +104,7 @@ public class BasicChannelService implements ChannelService {
 
     if (channel.getType() == ChannelType.PRIVATE) {
       log.warn("채널 수정 실패 - 비공개 채널은 수정할 수 없음. channelId={}", channelId);
-      throw new BadRequestException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE.getMessage());
+      throw new PrivateChannelCannotUpdateException(channelId);
     }
 
     channel.changeChannel(request.newName(), request.newDescription());
@@ -132,7 +132,7 @@ public class BasicChannelService implements ChannelService {
     return channelRepository.findById(channelId)
         .orElseThrow(() -> {
           log.warn("채널 조회 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
-          return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+          return new ChannelNotFoundException(channelId);
         });
   }
 
@@ -140,7 +140,7 @@ public class BasicChannelService implements ChannelService {
     return userRepository.findById(userId)
         .orElseThrow(() -> {
           log.warn("사용자 조회 실패 - 사용자를 찾을 수 없음. userId={}", userId);
-          return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+          return new UserNotFoundException(userId);
         });
   }
 

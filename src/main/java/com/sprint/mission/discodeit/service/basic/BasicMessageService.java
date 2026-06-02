@@ -8,9 +8,10 @@ import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
-import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
+import com.sprint.mission.discodeit.exception.message.MessageNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
@@ -117,7 +118,7 @@ public class BasicMessageService implements MessageService {
     return userRepository.findById(userId)
         .orElseThrow(() -> {
           log.warn("사용자 조회 실패 - 사용자를 찾을 수 없음. userId={}", userId);
-          return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+          return new UserNotFoundException(userId);
         });
   }
 
@@ -125,7 +126,7 @@ public class BasicMessageService implements MessageService {
     return channelRepository.findById(channelId)
         .orElseThrow(() -> {
           log.warn("채널 조회 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
-          return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+          return new ChannelNotFoundException(channelId);
         });
   }
 
@@ -135,7 +136,7 @@ public class BasicMessageService implements MessageService {
         .orElseThrow(
             () -> {
               log.warn("메시지 조회 실패 - 메시지를 찾을 수 없음. messageId={}", messageId);
-              return new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId));
+              return new MessageNotFoundException(messageId);
             }
         );
   }
@@ -143,14 +144,14 @@ public class BasicMessageService implements MessageService {
   private void validateUserExists(UUID userId) {
     userRepository.findById(userId).orElseThrow(() -> {
       log.warn("사용자 검증 실패 - 사용자를 찾을 수 없음. userId={}", userId);
-      return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+      return new UserNotFoundException(userId);
     });
   }
 
   private void validateChannelExists(UUID channelId) {
     channelRepository.findById(channelId).orElseThrow(() -> {
       log.warn("채널 검증 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
-      return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+      return new ChannelNotFoundException(channelId);
     });
   }
 
@@ -186,7 +187,9 @@ public class BasicMessageService implements MessageService {
         );
 
         throw new FileProcessingException(
-            ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+            file.getOriginalFilename(),
+            file.getContentType(),
+            file.getSize(),
             e
         );
       }

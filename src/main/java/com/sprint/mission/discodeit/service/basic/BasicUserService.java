@@ -5,10 +5,9 @@ import com.sprint.mission.discodeit.dto.user.UserResponse;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.BadRequestException;
-import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
-import com.sprint.mission.discodeit.exception.custom.ResourceNotFoundException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
+import com.sprint.mission.discodeit.exception.user.UserDuplicateException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
@@ -111,19 +110,25 @@ public class BasicUserService implements UserService {
 
   private User getUserOrThrow(UUID userId) {
     return userRepository.findById(userId).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
+        () -> new UserNotFoundException(userId)
     );
   }
 
   private void validateDuplicateUser(UserCreateRequest request) {
-    if (userRepository.findByUsername(request.username()).isPresent()
-        || userRepository.findByEmail(request.email()).isPresent()) {
-      log.warn("사용자 생성 실패 - 중복 사용자, username={}, email={}",
-          request.username(),
+    if (userRepository.findByUsername(request.username()).isPresent()) {
+      log.warn("사용자 생성 실패 - 중복 사용자. username={}",
+          request.username()
+      );
+
+      throw UserDuplicateException.withUsername(request.username());
+    }
+
+    if (userRepository.findByEmail(request.email()).isPresent()) {
+      log.warn("사용자 생성 실패 - 중복 사용자. email={}",
           request.email()
       );
 
-      throw new BadRequestException(ErrorCode.USER_DUPLICATE.getMessage());
+      throw UserDuplicateException.withEmail(request.email());
     }
   }
 
@@ -135,8 +140,7 @@ public class BasicUserService implements UserService {
               request.newEmail()
           );
 
-          throw new BadRequestException(
-              ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
+          throw UserDuplicateException.withEmail(request.newEmail());
         });
 
     userRepository.findByUsername(request.newUsername())
@@ -146,8 +150,7 @@ public class BasicUserService implements UserService {
               request.newUsername()
           );
 
-          throw new BadRequestException(
-              ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUsername()));
+          throw UserDuplicateException.withUsername(request.newUsername());
         });
   }
 
@@ -175,7 +178,12 @@ public class BasicUserService implements UserService {
           e
       );
 
-      throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
+      throw new FileProcessingException(
+          profile.getOriginalFilename(),
+          profile.getContentType(),
+          profile.getSize(),
+          e
+      );
     }
   }
 

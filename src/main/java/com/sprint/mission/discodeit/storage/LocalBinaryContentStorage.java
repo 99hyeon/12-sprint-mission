@@ -1,8 +1,7 @@
 package com.sprint.mission.discodeit.storage;
 
 import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
-import com.sprint.mission.discodeit.exception.ErrorCode;
-import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
+import com.sprint.mission.discodeit.exception.file.FileProcessingException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +46,8 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
       log.error("로컬 파일 저장소 초기화 실패. root={}", root, e);
 
       throw new FileProcessingException(
-          ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+          "INIT_LOCAL_STORAGE",
+          root.toString(),
           e
       );
     }
@@ -67,7 +67,9 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
       );
 
       throw new FileProcessingException(
-          ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+          "PUT_FILE",
+          id,
+          root.toString(),
           e
       );
     }
@@ -86,7 +88,9 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
       );
 
       throw new FileProcessingException(
-          ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
+          "GET_FILE",
+          id,
+          root.toString(),
           e
       );
     }
