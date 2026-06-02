@@ -22,12 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicMessageService implements MessageService {
@@ -56,6 +58,12 @@ public class BasicMessageService implements MessageService {
 
     Message savedMessage = messageRepository.save(message);
 
+    log.info("메시지 생성 완료. messageId={}, channelId={}, authorId={}, attachmentCount={}",
+        savedMessage.getId(),
+        channel.getId(),
+        author.getId(),
+        savedBinaryContents.size()
+    );
     return MessageResponse.from(savedMessage);
   }
 
@@ -79,8 +87,13 @@ public class BasicMessageService implements MessageService {
     validateChannelExists(message.getChannel().getId());
 
     message.changeContent(request.newContent());
-    message = messageRepository.save(message);
+    Message savedMessage = messageRepository.save(message);
 
+    log.info("메시지 수정 완료. messageId={}, channelId={}, authorId={}",
+        savedMessage.getId(),
+        savedMessage.getChannel().getId(),
+        savedMessage.getAuthor().getId()
+    );
     return MessageResponse.from(message);
   }
 
@@ -93,37 +106,52 @@ public class BasicMessageService implements MessageService {
       binaryContentRepository.deleteAll(attachments);
     }
     messageRepository.deleteById(id);
+
+    log.info("메시지 삭제 완료. messageId={}, attachmentCount={}",
+        id,
+        attachments.size()
+    );
   }
 
   private User getUserOrThrow(UUID userId) {
     return userRepository.findById(userId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
+        .orElseThrow(() -> {
+          log.warn("사용자 조회 실패 - 사용자를 찾을 수 없음. userId={}", userId);
+          return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+        });
   }
 
   private Channel getChannelOrThrow(UUID channelId) {
-    return channelRepository.findById(channelId).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
-    );
+    return channelRepository.findById(channelId)
+        .orElseThrow(() -> {
+          log.warn("채널 조회 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
+          return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+        });
   }
 
 
   private Message getMessageOrThrow(UUID messageId) {
     return messageRepository.findById(messageId)
         .orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId)));
+            () -> {
+              log.warn("메시지 조회 실패 - 메시지를 찾을 수 없음. messageId={}", messageId);
+              return new ResourceNotFoundException(ErrorCode.MESSAGE_NOT_FOUND.format(messageId));
+            }
+        );
   }
 
   private void validateUserExists(UUID userId) {
-    userRepository.findById(userId).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId))
-    );
+    userRepository.findById(userId).orElseThrow(() -> {
+      log.warn("사용자 검증 실패 - 사용자를 찾을 수 없음. userId={}", userId);
+      return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+    });
   }
 
   private void validateChannelExists(UUID channelId) {
-    channelRepository.findById(channelId).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId))
-    );
+    channelRepository.findById(channelId).orElseThrow(() -> {
+      log.warn("채널 검증 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
+      return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+    });
   }
 
   private List<BinaryContent> saveAttachments(List<MultipartFile> attachments) {
@@ -150,6 +178,13 @@ public class BasicMessageService implements MessageService {
 
         savedBinaryContents.add(savedBinaryContent);
       } catch (IOException e) {
+        log.error("첨부파일 저장 실패. fileName={}, contentType={}, size={}",
+            file.getOriginalFilename(),
+            file.getContentType(),
+            file.getSize(),
+            e
+        );
+
         throw new FileProcessingException(
             ErrorCode.FILE_PROCESSING_ERROR.getMessage(),
             e

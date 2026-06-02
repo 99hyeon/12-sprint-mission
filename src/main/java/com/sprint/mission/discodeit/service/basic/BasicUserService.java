@@ -5,7 +5,6 @@ import com.sprint.mission.discodeit.dto.user.UserResponse;
 import com.sprint.mission.discodeit.dto.user.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.exception.ErrorCode;
 import com.sprint.mission.discodeit.exception.custom.BadRequestException;
 import com.sprint.mission.discodeit.exception.custom.FileProcessingException;
@@ -19,9 +18,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
@@ -36,7 +37,7 @@ public class BasicUserService implements UserService {
     validateDuplicateUser(request);
 
     BinaryContent binaryContent = null;
-    if (profile != null) {
+    if (hasProfile(profile)) {
       binaryContent = saveProfileImage(profile);
     }
 
@@ -49,6 +50,10 @@ public class BasicUserService implements UserService {
     user.initStatus();
     User savedUser = userRepository.save(user);
 
+    log.info("사용자 생성 완료. userId={}, username={}",
+        savedUser.getId(),
+        savedUser.getUsername()
+    );
     return UserResponse.from(savedUser);
   }
 
@@ -64,9 +69,10 @@ public class BasicUserService implements UserService {
     User user = getUserOrThrow(userId);
     validateDuplicateForUpdate(userId, request);
 
-    UUID profileImageId = user.getProfile().getId();
+    BinaryContent currentProfile = user.getProfile();
+    UUID profileImageId = currentProfile == null ? null : currentProfile.getId();
     BinaryContent binaryContent = null;
-    if (profile != null) {
+    if (hasProfile(profile)) {
       if (profileImageId != null) {
         binaryContentRepository.deleteById(profileImageId);
       }
@@ -80,8 +86,10 @@ public class BasicUserService implements UserService {
         binaryContent
     );
     userRepository.save(user);
-    UserStatus userStatus = getUserStatusOrThrow(user.getId());
 
+    log.info("사용자 수정 완료. userId={}",
+        user.getId()
+    );
     return UserResponse.from(user);
   }
 
@@ -89,7 +97,8 @@ public class BasicUserService implements UserService {
   public void delete(UUID id) {
     User user = getUserOrThrow(id);
 
-    if (user.getProfile().getId() != null) {
+    BinaryContent profile = user.getProfile();
+    if (profile != null && profile.getId() != null) {
       binaryContentRepository.deleteById(user.getProfile().getId());
     }
 
@@ -97,6 +106,7 @@ public class BasicUserService implements UserService {
         .ifPresent(userStatus -> userStatusRepository.deleteById(userStatus.getId()));
 
     userRepository.deleteById(id);
+    log.info("사용자 삭제 완료. userId={}", id);
   }
 
   private User getUserOrThrow(UUID userId) {
@@ -105,16 +115,14 @@ public class BasicUserService implements UserService {
     );
   }
 
-  private UserStatus getUserStatusOrThrow(UUID userId) {
-    return userStatusRepository.findByUserId(userId).orElseThrow(
-        () -> new ResourceNotFoundException(
-            ErrorCode.USERSTATUS_WITH_USERID_NOT_FOUND.format(userId))
-    );
-  }
-
   private void validateDuplicateUser(UserCreateRequest request) {
     if (userRepository.findByUsername(request.username()).isPresent()
         || userRepository.findByEmail(request.email()).isPresent()) {
+      log.warn("사용자 생성 실패 - 중복 사용자, username={}, email={}",
+          request.username(),
+          request.email()
+      );
+
       throw new BadRequestException(ErrorCode.USER_DUPLICATE.getMessage());
     }
   }
@@ -123,6 +131,10 @@ public class BasicUserService implements UserService {
     userRepository.findByEmail(request.newEmail())
         .filter(found -> !found.getId().equals(userId))
         .ifPresent(found -> {
+          log.warn("사용자 수정 실패 - 중복 사용자, newEmail={}",
+              request.newEmail()
+          );
+
           throw new BadRequestException(
               ErrorCode.USER_EMAIL_ALREADY_EXIST.format(found.getEmail()));
         });
@@ -130,6 +142,10 @@ public class BasicUserService implements UserService {
     userRepository.findByUsername(request.newUsername())
         .filter(found -> !found.getId().equals(userId))
         .ifPresent(found -> {
+          log.warn("사용자 수정 실패 - 중복 사용자, newUsername={}",
+              request.newUsername()
+          );
+
           throw new BadRequestException(
               ErrorCode.USER_USERNAME_ALREADY_EXIST.format(found.getUsername()));
         });
@@ -152,7 +168,18 @@ public class BasicUserService implements UserService {
 
       return savedBinaryContent;
     } catch (IOException e) {
+      log.error("프로필 이미지 저장 실패. fileName={}, contentType={}, size={}",
+          profile.getOriginalFilename(),
+          profile.getContentType(),
+          profile.getSize(),
+          e
+      );
+
       throw new FileProcessingException(ErrorCode.FILE_PROCESSING_ERROR.getMessage(), e);
     }
+  }
+
+  private boolean hasProfile(MultipartFile profile) {
+    return profile != null && !profile.isEmpty();
   }
 }

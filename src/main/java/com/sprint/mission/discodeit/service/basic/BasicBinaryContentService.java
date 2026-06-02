@@ -11,8 +11,10 @@ import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicBinaryContentService implements BinaryContentService {
@@ -39,7 +41,14 @@ public class BasicBinaryContentService implements BinaryContentService {
 
   @Override
   public BinaryContentResponse find(UUID id) {
-    return BinaryContentResponse.from(getBinaryContentOrThrow(id));
+    BinaryContent binaryContent = getBinaryContentOrThrow(id);
+
+    log.info("파일 조회 완료. binaryContentId={}, fileName={}, size={}",
+        binaryContent.getId(),
+        binaryContent.getFileName(),
+        binaryContent.getSize()
+    );
+    return BinaryContentResponse.from(binaryContent);
   }
 
   @Override
@@ -62,9 +71,10 @@ public class BasicBinaryContentService implements BinaryContentService {
   }
 
   private BinaryContent getBinaryContentOrThrow(UUID id) {
-    return binaryContentRepository.findById(id).orElseThrow(
-        () -> new ResourceNotFoundException(ErrorCode.BINARYCONTENT_NOT_FOUND.format(id))
-    );
+    return binaryContentRepository.findById(id).orElseThrow(() -> {
+      log.warn("파일 조회 실패 - 파일 메타데이터를 찾을 수 없음. binaryContentId={}", id);
+      return new ResourceNotFoundException(ErrorCode.BINARYCONTENT_NOT_FOUND.format(id));
+    });
   }
 
 }

@@ -23,8 +23,10 @@ import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BasicChannelService implements ChannelService {
@@ -41,7 +43,13 @@ public class BasicChannelService implements ChannelService {
         request.description()
     );
 
-    return ChannelResponse.from(channelRepository.save(channel), List.of(), Instant.now());
+    Channel savedChannel = channelRepository.save(channel);
+    log.info("공개 채널 생성 완료. channelId={}, name={}",
+        savedChannel.getId(),
+        savedChannel.getName()
+    );
+
+    return ChannelResponse.from(savedChannel, List.of(), Instant.now());
   }
 
   @Override
@@ -62,6 +70,11 @@ public class BasicChannelService implements ChannelService {
       participants.add(UserResponse.from(user));
     }
 
+    log.info("비공개 채널 생성 완료. channelId={}, name={}, participantCount={}",
+        savedChannel.getId(),
+        savedChannel.getName(),
+        participants.size()
+    );
     return ChannelResponse.from(savedChannel, participants, Instant.now());
   }
 
@@ -90,12 +103,17 @@ public class BasicChannelService implements ChannelService {
     Channel channel = getChannelOrThrow(channelId);
 
     if (channel.getType() == ChannelType.PRIVATE) {
+      log.warn("채널 수정 실패 - 비공개 채널은 수정할 수 없음. channelId={}", channelId);
       throw new BadRequestException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE.getMessage());
     }
 
     channel.changeChannel(request.newName(), request.newDescription());
     Channel updatedChannel = channelRepository.save(channel);
 
+    log.info("채널 수정 완료. channelId={}, name={}",
+        updatedChannel.getId(),
+        updatedChannel.getName()
+    );
     return ChannelResponse.from(updatedChannel, List.of(), getLastMessageAt(channel));
   }
 
@@ -106,18 +124,24 @@ public class BasicChannelService implements ChannelService {
     messageRepository.deleteByChannelId(id);
     readStatusRepository.deleteByChannelId(id);
     channelRepository.deleteById(id);
+
+    log.info("채널 삭제 완료. channelId={}", id);
   }
 
   private Channel getChannelOrThrow(UUID channelId) {
     return channelRepository.findById(channelId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId)));
+        .orElseThrow(() -> {
+          log.warn("채널 조회 실패 - 채널을 찾을 수 없음. channelId={}", channelId);
+          return new ResourceNotFoundException(ErrorCode.CHANNEL_NOT_FOUND.format(channelId));
+        });
   }
 
   private User getUserOrThrow(UUID userId) {
     return userRepository.findById(userId)
-        .orElseThrow(
-            () -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId)));
+        .orElseThrow(() -> {
+          log.warn("사용자 조회 실패 - 사용자를 찾을 수 없음. userId={}", userId);
+          return new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.format(userId));
+        });
   }
 
   private boolean availableAccessChannel(Channel channel, UUID userId) {
