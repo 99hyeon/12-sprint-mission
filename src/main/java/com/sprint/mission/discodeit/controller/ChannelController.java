@@ -6,6 +6,7 @@ import com.sprint.mission.discodeit.dto.channel.ChannelPrivateCreateRequest;
 import com.sprint.mission.discodeit.dto.channel.ChannelPublicCreateRequest;
 import com.sprint.mission.discodeit.dto.channel.ChannelUpdateRequest;
 import com.sprint.mission.discodeit.service.ChannelService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class ChannelController implements ChannelApi {
   @Override
   @PostMapping(value = "/public")
   public ResponseEntity<ChannelResponse> createPublicChannel(
-      @RequestBody ChannelPublicCreateRequest request) {
+      @Valid @RequestBody ChannelPublicCreateRequest request) {
     log.info("공개 채널 생성 API 요청. name={}, description={}",
         request.name(),
         request.description()
@@ -45,7 +46,7 @@ public class ChannelController implements ChannelApi {
   @Override
   @PostMapping(value = "/private")
   public ResponseEntity<ChannelResponse> createPrivateChannel(
-      @RequestBody ChannelPrivateCreateRequest request) {
+      @Valid @RequestBody ChannelPrivateCreateRequest request) {
     log.info("비공개 채널 생성 API 요청. name={}, participantCount={}",
         request.name(),
         request.participantIds().size()
