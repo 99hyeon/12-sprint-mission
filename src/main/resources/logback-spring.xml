@@ -4,9 +4,9 @@
   <!-- 로그 파일 저장 경로: 프로젝트 루트/.logs -->
   <property name="LOG_PATH" value=".logs"/>
 
-  <!-- 로그 패턴 -->
+  <!-- 로그 패턴: MDC 요청 정보 포함 -->
   <property name="LOG_PATTERN"
-    value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %.36logger{36} [%X{requestId} | %X{requestMethod} | %X{requestUri}] - %msg%n"/>
 
   <!-- 콘솔 로그 출력 설정 -->
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
