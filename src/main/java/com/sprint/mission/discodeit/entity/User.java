@@ -17,57 +17,57 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends UpdatableBaseEntity {
 
-    @Column(unique = true, nullable = false, length = 100)
-    private String email;
-    @Column(unique = true, nullable = false, length = 50)
-    private String username;
-    @Column(nullable = false, length = 60)
-    private String password;
+  @Column(unique = true, nullable = false, length = 100)
+  private String email;
+  @Column(unique = true, nullable = false, length = 50)
+  private String username;
+  @Column(nullable = false, length = 60)
+  private String password;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id", unique = true)
-    private BinaryContent profile;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "profile_id", unique = true)
+  private BinaryContent profile;
 
-    @OneToOne(
-        mappedBy = "user",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true,
-        fetch = FetchType.LAZY
-    )
-    private UserStatus status;
+  @OneToOne(
+      mappedBy = "user",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY
+  )
+  private UserStatus status;
 
-    public User(String email, String username, String password, BinaryContent profile) {
-        super();
-        this.email = email;
-        this.username = username;
-        this.password = password;
-        this.profile = profile;
+  public User(String email, String username, String password, BinaryContent profile) {
+    super();
+    this.email = email;
+    this.username = username;
+    this.password = password;
+    this.profile = profile;
+  }
+
+  public void initStatus() {
+    this.status = new UserStatus(this);
+  }
+
+  public void updateEmail(String email) {
+    this.email = email;
+  }
+
+  public void updateUsername(String username) {
+    this.username = username;
+  }
+
+  public void changeProfile(String email, String username, BinaryContent profile) {
+    if (email != null && !email.isBlank()) {
+      this.email = email;
     }
 
-    public void initStatus() {
-        this.status = new UserStatus(this);
+    if (username != null && !username.isBlank()) {
+      this.username = username;
     }
 
-    public void updateEmail(String email) {
-        this.email = email;
+    if (profile != null) {
+      this.profile = profile;
     }
-
-    public void updateUsername(String username) {
-        this.username = username;
-    }
-
-    public void changeProfile(String email, String username, BinaryContent profile) {
-        if (email != null) {
-            this.email = email;
-        }
-
-        if (username != null) {
-            this.username = username;
-        }
-
-        if (profile != null) {
-            this.profile = profile;
-        }
-    }
+  }
 
 }

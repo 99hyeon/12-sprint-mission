@@ -39,16 +39,12 @@ class BasicMessageServiceTest {
 
   @Mock
   private MessageRepository messageRepository;
-
   @Mock
   private BinaryContentRepository binaryContentRepository;
-
   @Mock
   private ChannelRepository channelRepository;
-
   @Mock
   private UserRepository userRepository;
-
   @InjectMocks
   private BasicMessageService messageService;
 
