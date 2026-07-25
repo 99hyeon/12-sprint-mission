@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
                                 email VARCHAR(100) NOT NULL,
     username VARCHAR(50) NOT NULL,
     password VARCHAR(60) NOT NULL,
+    role VARCHAR(20) NOT NULL,
     profile_id UUID,
 
     CONSTRAINT uk_users_email UNIQUE (email),
@@ -111,3 +112,6 @@ CREATE TABLE IF NOT EXISTS read_statuses (
     REFERENCES channels(id)
                             ON DELETE CASCADE
     );
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'USER';
