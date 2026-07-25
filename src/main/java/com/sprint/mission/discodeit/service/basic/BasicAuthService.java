@@ -8,6 +8,7 @@ import com.sprint.mission.discodeit.exception.user.WrongPasswordException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class BasicAuthService implements AuthService {
 
   private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   public UserResponse login(LoginRequest request) {
@@ -22,7 +24,7 @@ public class BasicAuthService implements AuthService {
         () -> UserNotFoundException.withEmail(request.email())
     );
 
-    if (!user.getPassword().equals(request.password())) {
+    if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw new WrongPasswordException(request.email());
     }
 

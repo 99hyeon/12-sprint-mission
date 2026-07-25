@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +31,7 @@ public class BasicUserService implements UserService {
   private final UserStatusRepository userStatusRepository;
   private final BinaryContentRepository binaryContentRepository;
   private final BinaryContentStorage binaryContentStorage;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   public UserResponse create(UserCreateRequest request, MultipartFile profile) {
@@ -43,7 +45,7 @@ public class BasicUserService implements UserService {
     User user = new User(
         request.email(),
         request.username(),
-        request.password(),
+        passwordEncoder.encode(request.password()),
         binaryContent
     );
     user.initStatus();
