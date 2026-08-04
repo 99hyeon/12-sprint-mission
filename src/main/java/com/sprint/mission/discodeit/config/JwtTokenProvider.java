@@ -97,6 +97,10 @@ public class JwtTokenProvider {
     return getValidatedClaims(token, REFRESH_TOKEN);
   }
 
+  public long getRefreshTokenExpiration() {
+    return refreshTokenExpiration;
+  }
+
   private String createToken(
       UUID userId, String username, String role, String tokenType, long expiration
   ) {
