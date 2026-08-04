@@ -14,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -30,6 +31,7 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(
       HttpSecurity http,
       JwtLoginSuccessHandler jwtLoginSuccessHandler,
+      JwtAuthenticationFilter jwtAuthenticationFilter,
       LoginFailureHandler loginFailureHandler,
       RestAuthenticationEntryPoint authenticationEntryPoint,
       RestAccessDeniedHandler accessDeniedHandler
@@ -56,6 +58,7 @@ public class SecurityConfig {
             .successHandler(jwtLoginSuccessHandler)
             .failureHandler(loginFailureHandler)
         )
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .logout(logout -> logout
             .logoutUrl("/api/auth/logout")
             .logoutSuccessHandler(
