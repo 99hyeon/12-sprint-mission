@@ -3,6 +3,7 @@ package com.sprint.mission.discodeit.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
+import java.util.Arrays;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -12,7 +13,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtLogoutHandler implements LogoutHandler {
 
-  private static final String REFRESH_TOKEN_COOKIE_NAME = "REFRESH_TOKEN";
+  private final JwtRegistry jwtRegistry;
+
+  public JwtLogoutHandler(JwtRegistry jwtRegistry) {
+    this.jwtRegistry = jwtRegistry;
+  }
 
   @Override
   public void logout(
@@ -20,7 +25,14 @@ public class JwtLogoutHandler implements LogoutHandler {
       HttpServletResponse response,
       Authentication authentication
   ) {
-    ResponseCookie expiredRefreshToken = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
+    if (request.getCookies() != null) {
+      Arrays.stream(request.getCookies())
+          .filter(cookie -> JwtTokenProvider.REFRESH_TOKEN_COOKIE_NAME.equals(cookie.getName()))
+          .findFirst()
+          .ifPresent(cookie -> jwtRegistry.invalidateJwtInformationByRefreshToken(cookie.getValue()));
+    }
+
+    ResponseCookie expiredRefreshToken = ResponseCookie.from(JwtTokenProvider.REFRESH_TOKEN_COOKIE_NAME, "")
         .httpOnly(true)
         .secure(request.isSecure())
         .path("/")

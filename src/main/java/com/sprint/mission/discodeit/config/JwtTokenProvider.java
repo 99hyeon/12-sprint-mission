@@ -29,6 +29,7 @@ public class JwtTokenProvider {
   private static final String TOKEN_TYPE_CLAIM = "tokenType";
   private static final String ACCESS_TOKEN = "access";
   private static final String REFRESH_TOKEN = "refresh";
+  public static final String REFRESH_TOKEN_COOKIE_NAME = "REFRESH_TOKEN";
 
   private final SecretKey signingKey;
   private final long accessTokenExpiration;

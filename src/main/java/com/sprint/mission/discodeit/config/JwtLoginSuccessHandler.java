@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.discodeit.dto.auth.JwtDto;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,10 +19,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequiredArgsConstructor
 public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
 
-  private static final String REFRESH_TOKEN_COOKIE_NAME = "REFRESH_TOKEN";
-
   private final ObjectMapper objectMapper;
   private final JwtTokenProvider jwtTokenProvider;
+  private final JwtRegistry jwtRegistry;
 
   @Override
   public void onAuthenticationSuccess(
@@ -33,7 +33,16 @@ public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
     String accessToken = jwtTokenProvider.createAccessToken(userDetails.getUserResponse());
     String refreshToken = jwtTokenProvider.createRefreshToken(userDetails.getUserResponse());
 
-    ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
+    jwtRegistry.registerJwtInformation(new JwtInformation(
+        userDetails.getUserResponse(),
+        accessToken,
+        refreshToken,
+        Instant.now().plusMillis(jwtTokenProvider.getRefreshTokenExpiration())
+    ));
+
+    ResponseCookie refreshTokenCookie = ResponseCookie.from(
+            JwtTokenProvider.REFRESH_TOKEN_COOKIE_NAME,
+            refreshToken)
         .httpOnly(true)
         .secure(request.isSecure())
         .path("/")

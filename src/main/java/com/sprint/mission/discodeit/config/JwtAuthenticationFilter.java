@@ -26,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER_PREFIX = "Bearer ";
 
   private final JwtTokenProvider jwtTokenProvider;
+  private final JwtRegistry jwtRegistry;
   private final UserDetailsService userDetailsService;
 
   @Override
@@ -47,6 +48,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private void authenticate(String accessToken, HttpServletRequest request) {
     try {
+      if (!jwtRegistry.hasActiveJwtInformationByAccessToken(accessToken)) {
+        return;
+      }
+      
       JWTClaimsSet claims = jwtTokenProvider.getAccessTokenClaims(accessToken);
       String username = claims.getStringClaim("username");
       UserDetails userDetails = userDetailsService.loadUserByUsername(username);
