@@ -80,6 +80,26 @@ public class JwtTokenProvider {
     }
   }
 
+  // 토큰 재발급
+  public TokenPair refreshTokens(String refreshToken) {
+    JWTClaimsSet claims = getValidatedClaims(refreshToken, REFRESH_TOKEN);
+
+    try {
+      UUID userId = UUID.fromString(claims.getSubject());
+      String username = claims.getStringClaim("username");
+      String role = claims.getStringClaim("role");
+
+      return new TokenPair(
+          createToken(userId, username, role, ACCESS_TOKEN, accessTokenExpiration),
+          createToken(userId, username, role, REFRESH_TOKEN, refreshTokenExpiration),
+          username
+      );
+
+    } catch (ParseException | IllegalArgumentException e) {
+      throw new JwtException(ErrorCode.JWT_INVALID_TOKEN, e);
+    }
+  }
+
   public boolean validateToken(String token) {
     try {
       getValidatedClaims(token, null);
@@ -99,6 +119,10 @@ public class JwtTokenProvider {
 
   public long getRefreshTokenExpiration() {
     return refreshTokenExpiration;
+  }
+
+  public record TokenPair(String accessToken, String refreshToken, String username) {
+
   }
 
   private String createToken(
